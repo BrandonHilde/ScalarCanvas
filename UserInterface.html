@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+    <head>
+        <script src="Canvas/CanvasSetup.js"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+
+    <body>
+        <canvas id="drawingCanvas"></canvas>
+        <script>
+            const canvasObj = document.getElementById('drawingCanvas');
+
+            BuildCanvas(canvasObj);
+
+            const graphics = canvasObj.getContext("2d");
+
+
+            graphics.fillStyle = "#22FF22";
+            graphics.fillRect(0, 0, canvasObj.width, canvasObj.height);
+            graphics.fill();
+
+
+        </script>
+    </body>
+</html>
