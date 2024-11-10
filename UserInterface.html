@@ -2,37 +2,61 @@
 <html>
     <head>
         <script src="Canvas/CanvasSetup.js"></script>
+        <script src="Canvas/Objects.js"></script>
+        <script src="Input/InputHandlers.js"></script>
         <link rel="stylesheet" href="style.css">
     </head>
 
     <body>
         <canvas id="drawingCanvas"></canvas>
         <script>
+
+            /// CANVAS SETUP
             const canvasObj = document.getElementById('drawingCanvas');
 
             BuildCanvas(canvasObj);
 
             const graphics = canvasObj.getContext("2d");
 
-
             ClearCanvas(canvasObj, graphics);
+            
+            /// END OF CANVAS SETUP
 
+            /// ENUMS
+
+            const DrawingState = {
+                DrawCurve: 0,
+                Edit: 1
+            };
+
+            const HotKeys = {
+                EditMode: "e",
+                AddCurve: "a",
+                SelectNextShape: "n"
+
+            };
+
+            var currentState = DrawingState.DrawCurve;
+
+            /// END OF ENUMS
+
+            /// USER INPUT
             document.addEventListener("keypress", function (e) {
-
+                OnKeyPress(e);
             });
 
             document.addEventListener("mousedown", function (e) {
-                
+                OnMouseDown(e);
             });
 
             document.addEventListener("mouseup", function (e) {
-                
+                OnMouseUp(e);
             });
 
             document.addEventListener("mousemove", function (e) {
-                
+                OnMouseMove(e);
             });
-
+            /// END OF USER INPUT
 
         </script>
     </body>

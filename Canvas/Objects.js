@@ -1,8 +1,19 @@
+const ObjectType = {
+    Path: "path",
+    Curve: "curve",
+    Circle: "circle",
+    Line: "line",
+    Move: "move",
+    Rectangle: "rect"
+}
+
 class PathShape
 {
     constructor(x= 0, y = 0)
     {
         this.objects = [];
+
+        this.ObjType = ObjectType.Path;
 
         this.AddObject(new MoveTo(x, y));
     }
@@ -19,6 +30,8 @@ class MoveTo
     {
         this.X = x;
         this.Y = y;
+
+        this.ObjType = ObjectType.Move;
     }
 
     Build()
@@ -51,6 +64,8 @@ class CurveTo
 
         this.Style = "#99FF99";
         this.LineWidth = 3;
+
+        this.ObjType = ObjectType.Curve;
     }
 
     Build()
