@@ -3,6 +3,7 @@
     <head>
         <script src="Math/Math.js"></script>
         <script src="Canvas/CanvasSetup.js"></script>
+        <script src="Canvas/CanvasBuilder.js"></script>
         <script src="Canvas/Objects.js"></script>
         <script src="Input/InputHandlers.js"></script>
         <script src="Input/ShapeInput.js"></script>
@@ -22,6 +23,8 @@
             const graphics = canvasObj.getContext("2d");
 
             ClearCanvas(canvasObj, graphics);
+
+            const Builder = new CanvasBuilder();
             
             /// END OF CANVAS SETUP
 
@@ -58,6 +61,9 @@
 
             document.addEventListener("mousemove", function (e) {
                 OnMouseMove(e);
+
+                Builder.Build();
+                Builder.Render(graphics);
             });
 
             document.addEventListener('mousewheel', function(e) {

@@ -1,5 +1,12 @@
+const PointType = {
+    xy:"xy",
+    xy2:"xy2",
+    c: "c",
+    c2: "c2"
+};
+
 function UpdateCurve(x, y) {
-    if (mousePoints.length > 0) {
+    if (mousePoints.length > 4) {
         var num1 = parseInt(mousePoints.length / 4);
         var num2 = num1 * 3;
 
@@ -27,10 +34,11 @@ function AddNewCurve(x, y, cx, cy, cx2, cy2) {
     CurrentShape.AddObject(new CurveTo(x, y, cx, cy, cx2, cy2));
 }
 
-function StartCurve(mx_down, my_down)
+function StartCurve(mx, my)
 {
-    CurrentShape = new PathShape(mx_down, my_down);
-    AddNewCurve(mx_down, my_down, mx_down, my_down, mx_down, my_down);
+    mousePoints = [];
+    CurrentShape = new PathShape(mx, my);
+    AddNewCurve(mx, my, mx, my, mx, my);
 }
 
 function ProccessCurve()
@@ -44,14 +52,73 @@ function ProccessCurve()
          last.X = MouseX;
          last.Y = MouseY;
 
-        if (MoveCount++ > ShapeCutoff) 
+        if (mousePoints.length > ShapeCutoff) 
         {
-            AddNewCurve(MouseX, MouseY, MouseDownX, MouseDownY, MouseX, MouseY);
+            AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
 
             MoveCount = 0;
             mousePoints = [];
         }
 
         UpdateCurve(MouseX, MouseY);
+    }
+}
+
+function GetNearestObject()
+{
+    var obj = null;
+
+    if(Builder)
+    {
+        var last = Builder.GetLatestObject();
+
+        obj = last.GetNearestObject(MouseX, MouseY, 20);
+    }
+
+
+    return obj;
+}
+
+function UpdateObject(obj, type, x, y)
+{
+    if(type == PointType.xy)
+    {
+        obj.X = x;
+        obj.Y = y;
+    }
+
+    if(type == PointType.c)
+    {
+        obj.CX = x;
+        obj.CY = y;
+    }
+
+    if(type == PointType.c2)
+    {
+        obj.CX2 = x;
+        obj.CY2 = y;
+    }
+}
+
+function DrawCircles(obj, graphics, radius)
+{
+    for(var v = 0; v < obj.objects.length; v++)
+    {
+        var sub = obj.objects[v];
+
+        var circ = new Circle(sub.X, sub.Y, radius);
+
+        circ.Render(graphics);
+
+        if(sub.ObjType == ObjectType.Curve)
+        {
+            var circ1 = new Circle(sub.CX, sub.CY, radius);
+
+            circ1.Render(graphics);
+
+            var circ2 = new Circle(sub.CX2, sub.CY2, radius);
+
+            circ2.Render(graphics);
+        }
     }
 }

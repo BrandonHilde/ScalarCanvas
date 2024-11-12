@@ -11,10 +11,11 @@ var MouseDownY = 0;
 // tracks mouse movement for curve drawing
 var mousePoints = [];
 
-var ShapeCutoff = 50;
-var MoveCount = 0;
+var ShapeCutoff = 70;
 
 var CurrentShape = null;
+
+var EditShape = null;
 
 function OnMouseDown(ev)
 {
@@ -25,13 +26,26 @@ function OnMouseDown(ev)
 
     if(currentState == DrawingState.DrawCurve)
     {
-        StartCurve(MouseDownX, MouseDownY);
+        StartCurve(MouseX, MouseY);
+    }
+
+    if(currentState == DrawingState.Edit)
+    {
+        EditShape = GetNearestObject();      
+        console.log(EditShape);
     }
 }
 
 function OnMouseUp(ev)
 {
     MouseDown = false;
+
+    if(CurrentShape)
+    {
+        Builder.AddObject(CurrentShape);
+    }
+
+    CurrentShape = null;
 }
 
 function OnMouseMove(ev)
@@ -53,12 +67,38 @@ function OnMouseMove(ev)
             }
             
         }
+
+        if(currentState == DrawingState.Edit)
+        {
+            if(EditShape)
+            {
+                UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
+            }
+        }
+    }
+
+    if(currentState == DrawingState.Edit)
+    {
+        DrawCircles(Builder.GetLatestObject(), graphics, 10);
     }
 }
 
 function OnKeyPress(ev)
 {
-    
+    if(ev.key == HotKeys.EditMode)
+    {
+        currentState = DrawingState.Edit;
+    }
+
+    if(ev.key == HotKeys.AddCurve)
+    {
+        currentState = DrawingState.DrawCurve;
+    }
+
+    if(ev.key == HotKeys.SelectNextShape)
+    {
+
+    }
 }
 
 function OnMouseWheel(ev)
