@@ -15,12 +15,32 @@ class PathShape
 
         this.ObjType = ObjectType.Path;
 
+        this.Style = "#FFFF00";
+
         this.AddObject(new MoveTo(x, y));
     }
 
     AddObject(obj)
     {
         this.objects[this.objects.length] = obj;
+    }
+
+    GetLatestObject()
+    {
+        return this.objects[this.objects.length - 1];
+    }
+
+    Render(canvas)
+    {
+        canvas.strokeStyle = this.Style;
+
+		for(var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Render(canvas);
+        }
+
+        canvas.stroke();
+        canvas.beginPath();
     }
 }
 

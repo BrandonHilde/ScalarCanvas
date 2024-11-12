@@ -1,11 +1,20 @@
 var MouseDown = false;
+
+// tracks current mouse location
 var MouseX = 0;
 var MouseY = 0;
 
+// tracks the last mouse down location
 var MouseDownX = 0;
 var MouseDownY = 0;
 
+// tracks mouse movement for curve drawing
 var mousePoints = [];
+
+var ShapeCutoff = 50;
+var MoveCount = 0;
+
+var CurrentShape = null;
 
 function OnMouseDown(ev)
 {
@@ -13,6 +22,11 @@ function OnMouseDown(ev)
 
     MouseDownX = ev.clientX;
     MouseDownY = ev.clientY;
+
+    if(currentState == DrawingState.DrawCurve)
+    {
+        StartCurve(MouseDownX, MouseDownY);
+    }
 }
 
 function OnMouseUp(ev)
@@ -25,11 +39,19 @@ function OnMouseMove(ev)
     MouseX = ev.clientX;
     MouseY = ev.clientY;
 
+    ClearCanvas(canvasObj, graphics);
+
     if(MouseDown)
     {
+        // tracks shape created with the mouse for DrawCurve
         if(currentState == DrawingState.DrawCurve)
         {
-            mousePoints[mousePoints.length] = new Point(MouseX, MouseY);
+            if(CurrentShape)
+            {
+                ProccessCurve();
+                CurrentShape.Render(graphics);
+            }
+            
         }
     }
 }
@@ -37,4 +59,9 @@ function OnMouseMove(ev)
 function OnKeyPress(ev)
 {
     
+}
+
+function OnMouseWheel(ev)
+{
+
 }

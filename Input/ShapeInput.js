@@ -12,7 +12,7 @@ function UpdateCurve(x, y) {
         var ctrlFar = MathUtilities.getPointAlongLine(0.75, mousePoints[0], mousePoints[mousePoints.length - 1]);
         var ctrlRight = MathUtilities.getPointAlongLine(2, ctrlFar, three);
 
-        var crv = currentCurve.GetLatestObject();
+        var crv = CurrentShape.GetLatestObject();
 
         crv.X = x;
         crv.Y = y;
@@ -20,5 +20,38 @@ function UpdateCurve(x, y) {
         crv.CY = ctrlLeft.y;
         crv.CX2 = ctrlRight.x;
         crv.CY2 = ctrlRight.y;
+    }
+}
+
+function AddNewCurve(x, y, cx, cy, cx2, cy2) {
+    CurrentShape.AddObject(new CurveTo(x, y, cx, cy, cx2, cy2));
+}
+
+function StartCurve(mx_down, my_down)
+{
+    CurrentShape = new PathShape(mx_down, my_down);
+    AddNewCurve(mx_down, my_down, mx_down, my_down, mx_down, my_down);
+}
+
+function ProccessCurve()
+{
+    mousePoints[mousePoints.length] = new Point(MouseX, MouseY);
+
+    if(CurrentShape)
+    {
+        var last = CurrentShape.GetLatestObject();
+
+         last.X = MouseX;
+         last.Y = MouseY;
+
+        if (MoveCount++ > ShapeCutoff) 
+        {
+            AddNewCurve(MouseX, MouseY, MouseDownX, MouseDownY, MouseX, MouseY);
+
+            MoveCount = 0;
+            mousePoints = [];
+        }
+
+        UpdateCurve(MouseX, MouseY);
     }
 }
