@@ -7,6 +7,7 @@
         <script src="Canvas/Objects.js"></script>
         <script src="Input/InputHandlers.js"></script>
         <script src="Input/ShapeInput.js"></script>
+        <script src="FileFormat/SaveSVG.js"></script>
         
         <link rel="stylesheet" href="style.css">
     </head>
@@ -31,15 +32,17 @@
             /// ENUMS
 
             const DrawingState = {
-                DrawCurve: 0,
-                Edit: 1
+                DrawCurve: "Draw Curves",
+                Edit: "Edit Mode",
+                DrawPolygon: "Draw Polygon"
             };
 
             const HotKeys = {
+                ToggleMode: "Tab",
                 EditMode: "e",
                 AddCurve: "a",
-                SelectNextShape: "n"
-
+                SelectNextShape: "n",
+                SaveShapes: "s"
             };
 
             var currentState = DrawingState.DrawCurve;

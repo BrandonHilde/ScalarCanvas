@@ -81,6 +81,8 @@ function OnMouseMove(ev)
     {
         DrawCircles(Builder.GetLatestObject(), graphics, 10);
     }
+
+    DrawUserHotkeys(graphics);
 }
 
 function OnKeyPress(ev)
@@ -98,6 +100,12 @@ function OnKeyPress(ev)
     if(ev.key == HotKeys.SelectNextShape)
     {
 
+    }
+
+    if(ev.key == HotKeys.SaveShapes)
+    {
+        var svg =  SaveSVG(Builder, 1000, 1000);
+        SaveToRawText(svg);
     }
 }
 

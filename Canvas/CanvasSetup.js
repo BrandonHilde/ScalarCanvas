@@ -24,3 +24,21 @@ function ClearCanvas(CanvasObject, canvasContext)
 
     canvasContext.fill();
 }
+
+function DrawUserHotkeys(graphics)
+{
+    graphics.fillStyle = "#99FF99";
+    graphics.font = "bold 16px Arial";
+    graphics.textAlign = 'left';
+    graphics.textBaseline = 'middle';
+
+    graphics.fillText("Add Curve:", 100, 100);
+    graphics.fillText(HotKeys.AddCurve, 250, 100);
+
+    graphics.fillText("Edit Mode:", 100, 120);
+    graphics.fillText(HotKeys.EditMode, 250, 120);
+
+    graphics.fillText("Save Shapes:", 100, 140);
+    graphics.fillText(HotKeys.SaveShapes, 250, 140);
+
+}

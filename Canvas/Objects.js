@@ -97,6 +97,18 @@ class PathShape
         canvas.stroke();
         canvas.beginPath();
     }
+
+    GetSvgData()
+    {
+        var text = "";
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            text += this.objects[v].GetSvgData();
+        }
+
+        return text;
+    }
 }
 
 class MoveTo
