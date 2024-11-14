@@ -32,7 +32,6 @@ function OnMouseDown(ev)
     if(currentState == DrawingState.Edit)
     {
         EditShape = GetNearestObject();      
-        console.log(EditShape);
     }
 }
 

@@ -81,6 +81,7 @@ function GetNearestObject()
 
 function UpdateObject(obj, type, x, y)
 {
+    console.log(type);
     if(type == PointType.xy)
     {
         obj.X = x;
@@ -102,23 +103,40 @@ function UpdateObject(obj, type, x, y)
 
 function DrawCircles(obj, graphics, radius)
 {
-    for(var v = 0; v < obj.objects.length; v++)
+    if(obj.objects)
     {
-        var sub = obj.objects[v];
-
-        var circ = new Circle(sub.X, sub.Y, radius);
-
-        circ.Render(graphics);
-
-        if(sub.ObjType == ObjectType.Curve)
+        for(var v = 0; v < obj.objects.length; v++)
         {
-            var circ1 = new Circle(sub.CX, sub.CY, radius);
+            var sub = obj.objects[v];
 
-            circ1.Render(graphics);
+            DrawCircleXY(sub, graphics, radius);
 
-            var circ2 = new Circle(sub.CX2, sub.CY2, radius);
-
-            circ2.Render(graphics);
+            if(sub.ObjType == ObjectType.Curve)
+            {
+                DrawCurveXY(sub, graphics, radius);
+            }
         }
     }
+    else
+    {
+        DrawCircleXY(obj, graphics, radius);
+    }
+}
+
+function DrawCircleXY(obj, graphics, radius)
+{
+    var circ = new Circle(obj.X, obj.Y, radius);
+
+    circ.Render(graphics);
+}
+
+function DrawCurveXY(obj, graphics, radius)
+{
+    var circ1 = new Circle(obj.CX, obj.CY, radius);
+
+    circ1.Render(graphics);
+
+    var circ2 = new Circle(obj.CX2, obj.CY2, radius);
+
+    circ2.Render(graphics);
 }

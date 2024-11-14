@@ -17,12 +17,14 @@ class CanvasBuilder
 
     Build()
     {
-
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Build();
+        }
     }
 
     Render(canvas)
     {
-
 		for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Render(canvas);

@@ -86,6 +86,14 @@ class PathShape
         };
     }
 
+    Build()
+    {
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Build();
+        }
+    }
+
     Render(canvas)
     {
         canvas.strokeStyle = this.Style;
@@ -212,29 +220,42 @@ class Circle
 
 class ImageDraw
 {
-    constructor(data, x, y, width, height)
+    constructor(data, x, y, width)
     {
         this.Data = data;
         this.X = x;
         this.Y = y;
         this.Width = width;
-        this.Height = height;
+        this.Height = 0;
+        this.Image = new Image();
+
+        this.Image.src = this.Data;
 
         this.ObjType = ObjectType.Image;
     }
 
+    GetNearestObject()
+    {
+        return {
+            Object: this,
+            Type: PointType.xy
+        };
+    }
+
     Build()
     {
+        if(this.Height == 0)
+        {
+            var ratio = this.Image.naturalHeight / this.Image.naturalWidth;
 
+            this.Height = ratio * this.Width;
+        }
     }
 
     Render(canvas)
     {
-        var img = new Image();
-        img.src = this.Data;
-        //img.onload = function() {
-            canvas.drawImage(img, this.X, this.Y, this.Width, this.Height);
-       // };
-
+        //canvas.globalAlpha = 0.2;
+        canvas.drawImage(this.Image, this.X, this.Y, this.Width, this.Height);
+        //canvas.globalAlpha = 1;
     }
 }
