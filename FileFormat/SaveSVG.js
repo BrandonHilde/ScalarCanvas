@@ -5,18 +5,16 @@ function  SaveSVG(builder, width = 1000, height = 1000, cssStyle = "fill:none;st
     for(var v = 0; v < builder.objects.length; v++)
     {
         var obj = builder.objects[v];
-        pathData += obj.GetSvgData();
+        if(obj.ObjType == ObjectType.Path)
+        {
+            pathData += obj.GetSvgData();
+        }
     }
 
     const filetxt = `<svg xmlns="http://www.w3.org/2000/svg" height="${height}" width="${width}">
     <path d="${pathData}" style="${cssStyle}" /></svg>`;
 
     return filetxt;
-}
-
-function SaveToFile()
-{
-    SaveToRawText(FullDocumentHTML());
 }
 
 function SaveToRawText(data)
@@ -36,5 +34,25 @@ function SaveToRawText(data)
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);  
         }, 0); 
+    }
+}
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Make sure the file is an image
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                var img = new ImageDraw(e.target.result, MouseX,MouseY,512,512);
+                Builder.AddObject(img);
+            }
+            
+            reader.readAsDataURL(file);
+        } else {
+            alert('Please drop an image file');
+        }
     }
 }

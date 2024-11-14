@@ -63,14 +63,30 @@
             });
 
             document.addEventListener("mousemove", function (e) {
-                OnMouseMove(e);
 
-                Builder.Build();
-                Builder.Render(graphics);
+                OnMouseMove(e);
             });
 
             document.addEventListener('mousewheel', function(e) {
                 OnMouseWheel(e);
+            });
+
+            // document.addEventListener('drop', function(e) {
+                
+            // });
+
+            canvasObj.addEventListener('drop', function(e) {
+                OnDrop(e);
+            });
+
+            canvasObj.addEventListener('dragenter', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            canvasObj.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
             });
             /// END OF USER INPUT
 

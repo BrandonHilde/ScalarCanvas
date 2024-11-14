@@ -55,8 +55,20 @@ function OnMouseMove(ev)
 
     ClearCanvas(canvasObj, graphics);
 
+    Builder.Build();
+    Builder.Render(graphics);
+
     if(MouseDown)
     {
+
+        if(currentState == DrawingState.Edit)
+        {
+            if(EditShape)
+            {
+                UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
+            }
+        }
+
         // tracks shape created with the mouse for DrawCurve
         if(currentState == DrawingState.DrawCurve)
         {
@@ -66,14 +78,6 @@ function OnMouseMove(ev)
                 CurrentShape.Render(graphics);
             }
             
-        }
-
-        if(currentState == DrawingState.Edit)
-        {
-            if(EditShape)
-            {
-                UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
-            }
         }
     }
 
@@ -112,4 +116,15 @@ function OnKeyPress(ev)
 function OnMouseWheel(ev)
 {
 
+}
+
+function OnDrop(ev)
+{
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    const dt = ev.dataTransfer;
+    const files = dt.files;
+
+    handleFiles(files);
 }

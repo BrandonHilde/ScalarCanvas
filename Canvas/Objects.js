@@ -4,7 +4,8 @@ const ObjectType = {
     Circle: "circle",
     Line: "line",
     Move: "move",
-    Rectangle: "rect"
+    Rectangle: "rect",
+    Image: "image"
 }
 
 class PathShape
@@ -206,5 +207,34 @@ class Circle
             false);	
 
         canvas.stroke();
+    }
+}
+
+class ImageDraw
+{
+    constructor(data, x, y, width, height)
+    {
+        this.Data = data;
+        this.X = x;
+        this.Y = y;
+        this.Width = width;
+        this.Height = height;
+
+        this.ObjType = ObjectType.Image;
+    }
+
+    Build()
+    {
+
+    }
+
+    Render(canvas)
+    {
+        var img = new Image();
+        img.src = this.Data;
+        //img.onload = function() {
+            canvas.drawImage(img, this.X, this.Y, this.Width, this.Height);
+       // };
+
     }
 }
