@@ -1,3 +1,6 @@
+var shapeIndex = 0;
+var subIndex = 0;
+
 const PointType = {
     xy:"xy",
     xy2:"xy2",
@@ -64,40 +67,50 @@ function ProccessCurve()
     }
 }
 
+function NextShapeIndex()
+{
+    if(Builder)
+    {
+        shapeIndex++
+        shapeIndex %= Builder.objects.length;
+    }
+}
+
 function GetNearestObject()
 {
     var obj = null;
 
     if(Builder)
     {
-        var last = Builder.GetLatestObject();
+        var last = Builder.objects[shapeIndex];
 
         obj = last.GetNearestObject(MouseX, MouseY, 20);
     }
-
 
     return obj;
 }
 
 function UpdateObject(obj, type, x, y)
 {
-    console.log(type);
-    if(type == PointType.xy)
+    if(obj)
     {
-        obj.X = x;
-        obj.Y = y;
-    }
+        if(type == PointType.xy)
+        {
+            obj.X = x;
+            obj.Y = y;
+        }
 
-    if(type == PointType.c)
-    {
-        obj.CX = x;
-        obj.CY = y;
-    }
+        if(type == PointType.c)
+        {
+            obj.CX = x;
+            obj.CY = y;
+        }
 
-    if(type == PointType.c2)
-    {
-        obj.CX2 = x;
-        obj.CY2 = y;
+        if(type == PointType.c2)
+        {
+            obj.CX2 = x;
+            obj.CY2 = y;
+        }
     }
 }
 

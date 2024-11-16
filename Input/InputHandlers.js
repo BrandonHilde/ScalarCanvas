@@ -54,9 +54,6 @@ function OnMouseMove(ev)
 
     ClearCanvas(canvasObj, graphics);
 
-    Builder.Build();
-    Builder.Render(graphics);
-
     if(MouseDown)
     {
 
@@ -67,31 +64,24 @@ function OnMouseMove(ev)
                 UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
             }
         }
-
-        // tracks shape created with the mouse for DrawCurve
-        if(currentState == DrawingState.DrawCurve)
-        {
-            if(CurrentShape)
-            {
-                ProccessCurve();
-                CurrentShape.Render(graphics);
-            }
-            
-        }
     }
 
-    if(currentState == DrawingState.Edit)
-    {
-        DrawCircles(Builder.GetLatestObject(), graphics, 10);
-    }
-
-    DrawUserHotkeys(graphics);
+    ReDraw();
 }
 
 function OnKeyPress(ev)
 {
+
+    ClearCanvas(canvasObj, graphics);
+    ReDraw();
+    
     if(ev.key == HotKeys.EditMode)
     {
+        if(currentState == DrawingState.Edit)
+        {
+            NextShapeIndex();
+        }
+
         currentState = DrawingState.Edit;
     }
 
@@ -102,7 +92,7 @@ function OnKeyPress(ev)
 
     if(ev.key == HotKeys.SelectNextShape)
     {
-
+        NextShapeIndex();
     }
 
     if(ev.key == HotKeys.SaveShapes)
@@ -126,4 +116,32 @@ function OnDrop(ev)
     const files = dt.files;
 
     handleFiles(files);
+}
+
+function ReDraw()
+{
+    Builder.Build();
+    Builder.Render(graphics);
+
+    if(MouseDown)
+    {
+
+        // tracks shape created with the mouse for DrawCurve
+        if(currentState == DrawingState.DrawCurve)
+        {
+            if(CurrentShape)
+            {
+                ProccessCurve();
+                CurrentShape.Render(graphics);
+            }
+            
+        }
+    }
+
+    if(currentState == DrawingState.Edit)
+    {
+        DrawCircles(Builder.objects[shapeIndex], graphics, 5);
+    }
+
+    DrawUserHotkeys(graphics);
 }
