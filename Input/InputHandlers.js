@@ -71,7 +71,6 @@ function OnMouseMove(ev)
 
 function OnKeyPress(ev)
 {
-
     ClearCanvas(canvasObj, graphics);
     ReDraw();
     

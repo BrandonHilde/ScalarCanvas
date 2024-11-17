@@ -19,6 +19,10 @@ class MathUtilities {
         return new Point((x1 + x2) / 2, (y1 + y2) / 2);
     }
 
+    static getRandomInt(max) {
+        return Math.floor(Math.random() * max);
+    }
+
     static getWidePoint(x1, y1, x2, y2, mx, my, distance) {
         if (arguments.length === 3) {
             // If called with Slope Point, mx, my, distance
