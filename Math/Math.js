@@ -23,6 +23,15 @@ class MathUtilities {
         return Math.floor(Math.random() * max);
     }
 
+    static getMirrorValue(MirrorXY,  XY)
+    {
+        var mx = XY - MirrorXY;
+
+        XY = MirrorXY + (mx * -1);
+
+        return XY;
+    }
+
     static getWidePoint(x1, y1, x2, y2, mx, my, distance) {
         if (arguments.length === 3) {
             // If called with Slope Point, mx, my, distance

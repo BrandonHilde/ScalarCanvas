@@ -13,7 +13,11 @@ var mousePoints = [];
 
 var ShapeCutoff = 70;
 
+//temporary - remove later
+var MirrorTest = new MirrorObj(true, 600, 0);
+
 var CurrentShape = null;
+var MirrorActive = false;
 
 var EditShape = null;
 
@@ -42,6 +46,13 @@ function OnMouseUp(ev)
     if(CurrentShape)
     {
         Builder.AddObject(CurrentShape);
+    }
+
+    if(MirrorActive)
+    {
+        var mirr = MirrorTest.ReplicateAsMirror(CurrentShape);
+
+        Builder.AddObject(mirr);
     }
 
     CurrentShape = null;
@@ -99,6 +110,11 @@ function OnKeyPress(ev)
         var svg =  SaveSVG(Builder, 1000, 1000);
         SaveToRawText(svg);
     }
+
+    if(ev.key == HotKeys.Mirror)
+    {
+        MirrorActive = !MirrorActive;
+    }
 }
 
 function OnMouseWheel(ev)
@@ -140,6 +156,13 @@ function ReDraw()
     if(currentState == DrawingState.Edit)
     {
         DrawCircles(Builder.objects[shapeIndex], graphics, 5);
+    }
+
+        
+    if(MirrorActive)
+    {
+        var ln = new Line(MirrorTest.MirrorX, 0, MirrorTest.MirrorX, 1000,"#000000");
+        ln.Render(graphics);
     }
 
     DrawUserHotkeys(graphics);

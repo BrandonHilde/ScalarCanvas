@@ -218,6 +218,39 @@ class Circle
     }
 }
 
+class Line
+{
+    constructor(x, y, x2, y2, style = "#99FF99")
+    {
+        this.X = x;
+        this.Y = y;
+        this.X2 = x2;
+        this.Y2 = y2;
+
+        this.Style = style;
+        this.LineWidth = 3;
+
+        this.ObjType = ObjectType.Line;
+    }
+
+    Build()
+    {
+
+    }
+
+    Render(canvas)
+    {
+        canvas.strokeStyle = this.Style;
+        canvas.lineWidth = this.LineWidth;
+
+        canvas.beginPath();
+        canvas.moveTo(this.X, this.Y);
+        canvas.lineTo(this.X2, this.Y2);
+
+        canvas.stroke();
+    }
+}
+
 class ImageDraw
 {
     constructor(data, x, y, width)
