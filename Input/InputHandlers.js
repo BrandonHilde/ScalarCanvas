@@ -14,7 +14,9 @@ var mousePoints = [];
 var ShapeCutoff = 70;
 
 //temporary - remove later
-var MirrorTest = new MirrorObj(true, 600, 0);
+var MirrorTestv = new MirrorObj(MirrorType.Vertical, 800, 0);
+var MirrorTesth = new MirrorObj(MirrorType.Horizontal, 0, 500);
+var MirrorTestb = new MirrorObj(MirrorType.Both, 800, 500);
 
 var CurrentShape = null;
 var MirrorActive = false;
@@ -50,9 +52,17 @@ function OnMouseUp(ev)
 
     if(MirrorActive)
     {
-        var mirr = MirrorTest.ReplicateAsMirror(CurrentShape);
+        var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
 
-        Builder.AddObject(mirr);
+        Builder.AddObject(mirrv);
+
+        var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
+
+        Builder.AddObject(mirrh);
+
+        var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
+
+        Builder.AddObject(mirrb);
     }
 
     CurrentShape = null;
@@ -161,8 +171,13 @@ function ReDraw()
         
     if(MirrorActive)
     {
-        var ln = new Line(MirrorTest.MirrorX, 0, MirrorTest.MirrorX, 1000,"#000000");
+        var ln = new Line(MirrorTestv.MirrorX, 0, MirrorTestv.MirrorX, 1000,"#000000");
+        ln.LineWidth = 1;
         ln.Render(graphics);
+
+        var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY, 1000,"#000000");
+        lnh.LineWidth = 1;
+        lnh.Render(graphics);
     }
 
     DrawUserHotkeys(graphics);

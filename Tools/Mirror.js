@@ -2,10 +2,16 @@ var MirrorObjs = [];
 
 var startID = 10000;
 
+const MirrorType = {
+    Vertical: 0,
+    Horizontal: 1,
+    Both: 2
+};
+
 class MirrorObj{
-    constructor(isVerticle, x, y)
+    constructor(type, x, y)
     {
-        this.Verticle = isVerticle;
+        this.mType = type;
         this.ID = startID++;
         this.Shape = null;
         this.MirrorX = x;
@@ -14,15 +20,12 @@ class MirrorObj{
 
     ReplicateAsMirror(Obj)
     {
-        console.log(Obj);
         var shape = new PathShape(0,0);
 
         for(var v = 0; v < Obj.objects.length; v++)
         {
             shape.objects[v] = this.Mirror(Obj.objects[v]);
         }
-
-        console.log(shape);
 
         return shape;
     }
@@ -31,7 +34,7 @@ class MirrorObj{
     {
         if(Obj)
         {
-            if(this.Verticle)
+            if(this.mType == MirrorType.Vertical)
             {
                 if(Obj.ObjType == ObjectType.Move)
                 {
@@ -46,6 +49,45 @@ class MirrorObj{
                     var valC2 = MathUtilities.getMirrorValue(this.MirrorX, Obj.CX2);
 
                     return new CurveTo(val, Obj.Y, valCx, Obj.CY, valC2, Obj.CY2);
+                }
+            }
+            else if (this.mType == MirrorType.Horizontal)
+            {
+                if(Obj.ObjType == ObjectType.Move)
+                {
+                    var val = MathUtilities.getMirrorValue(this.MirrorY, Obj.Y);
+
+                    return new MoveTo(Obj.X, val);
+                }
+                else
+                {
+                    var val = MathUtilities.getMirrorValue(this.MirrorY, Obj.Y);
+                    var valCy = MathUtilities.getMirrorValue(this.MirrorY, Obj.CY);
+                    var valC2 = MathUtilities.getMirrorValue(this.MirrorY, Obj.CY2);
+
+                    return new CurveTo(Obj.X, val, Obj.CX, valCy, Obj.CX2, valC2);
+                }
+            }
+            else if(this.mType == MirrorType.Both)
+            {
+                if(Obj.ObjType == ObjectType.Move)
+                {
+                    var valx = MathUtilities.getMirrorValue(this.MirrorX, Obj.X);
+                    var valy = MathUtilities.getMirrorValue(this.MirrorY, Obj.Y);
+
+                    return new MoveTo(valx, valy);
+                }
+                else
+                {
+                    var valx = MathUtilities.getMirrorValue(this.MirrorX, Obj.X);
+                    var valCx = MathUtilities.getMirrorValue(this.MirrorX, Obj.CX);
+                    var valCx2 = MathUtilities.getMirrorValue(this.MirrorX, Obj.CX2);
+
+                    var valy = MathUtilities.getMirrorValue(this.MirrorY, Obj.Y);
+                    var valCy = MathUtilities.getMirrorValue(this.MirrorY, Obj.CY);
+                    var valCy2 = MathUtilities.getMirrorValue(this.MirrorY, Obj.CY2);
+
+                    return new CurveTo(valx, valy, valCx, valCy, valCx2, valCy2);
                 }
             }
         }
