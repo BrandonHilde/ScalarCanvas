@@ -21,6 +21,30 @@ class PathShape
         this.AddObject(new MoveTo(x, y));
     }
 
+    GetBoundingBox()
+    {
+        var bounds = new BoundingBox(-1,-1,-1,-1);
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            var objB = this.objects[v].GetBoundingBox();
+
+            if(bounds.X < 0) bounds.X = objB.X;
+            else if(bounds.X > objB.X) bounds.X = objB.X;
+
+            if(bounds.Y < 0) bounds.Y = objB.Y;
+            else if(bounds.Y > objB.Y) bounds.Y = objB.Y;
+
+            if(bounds.Width < 0) bounds.Width = objB.Width;
+            else if(bounds.Width < objB.Width) bounds.Width = objB.Width;
+
+            if(bounds.Height < 0) bounds.Height = objB.Height;
+            else if(bounds.Height < objB.Height) bounds.Height = objB.Height;
+        }
+
+        return bounds;
+    }
+
     AddObject(obj)
     {
         this.objects[this.objects.length] = obj;
@@ -130,6 +154,11 @@ class MoveTo
         this.ObjType = ObjectType.Move;
     }
 
+    GetBoundingBox()
+    {
+        return new BoundingBox(this.X, this.Y, 1,1);
+    }
+
     Build()
     {
 
@@ -167,6 +196,37 @@ class CurveTo
     Build()
     {
 
+    }
+
+    GetBoundingBox()
+    {
+        var x = 999999999;
+        var y = 999999999;
+        var w = -1;
+        var h = -1;
+
+        if(this.X < x) x = this.X;
+        if(this.X > w) w = this.X;
+
+        if(this.Y < y) y = this.X;
+        if(this.Y > h) h = this.Y;
+
+        //c
+        if(this.CX < x) x = this.CX;
+        if(this.CX > w) w = this.CX;
+
+        if(this.CY < y) y = this.CX;
+        if(this.CY > h) h = this.CY;
+
+        //c2
+        if(this.CX2 < x) x = this.CX2;
+        if(this.CX2 > w) w = this.CX2;
+
+        if(this.CY2 < y) y = this.CX2;
+        if(this.CY2 > h) h = this.CY2;
+
+
+        return new BoundingBox(x, y, w, h);
     }
 
     Render(canvas)

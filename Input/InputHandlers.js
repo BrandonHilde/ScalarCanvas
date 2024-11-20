@@ -19,7 +19,7 @@ var MirrorTesth = new MirrorObj(MirrorType.Horizontal, 0, 500);
 var MirrorTestb = new MirrorObj(MirrorType.Both, 800, 500);
 
 var CurrentShape = null;
-var MirrorActive = false;
+var MirrorActive = MirrorType.None;
 
 var EditShape = null;
 
@@ -50,19 +50,28 @@ function OnMouseUp(ev)
         Builder.AddObject(CurrentShape);
     }
 
-    if(MirrorActive)
+    if(MirrorActive != MirrorType.None)
     {
-        var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
+        if(MirrorActive == MirrorType.Vertical || MirrorActive == MirrorType.Both)
+        {
+            var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
 
-        Builder.AddObject(mirrv);
+            Builder.AddObject(mirrv);
+        }
 
-        var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
+        if(MirrorActive == MirrorType.Horizontal || MirrorActive == MirrorType.Both)
+        {
+            var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
 
-        Builder.AddObject(mirrh);
+            Builder.AddObject(mirrh);
 
-        var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
+            if(MirrorActive == MirrorType.Both)
+            {
+                var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
 
-        Builder.AddObject(mirrb);
+                Builder.AddObject(mirrb);
+            }
+        }
     }
 
     CurrentShape = null;
@@ -116,14 +125,30 @@ function OnKeyPress(ev)
     }
 
     if(ev.key == HotKeys.SaveShapes)
-    {
-        var svg =  SaveSVG(Builder, 1000, 1000);
+    {      
+        var box = Builder.GetBoundingBox();
+        var svg =  SaveSVG(Builder, box.Width, box.Height);
+
         SaveToRawText(svg);
     }
 
     if(ev.key == HotKeys.Mirror)
     {
-        MirrorActive = !MirrorActive;
+        if(MirrorActive == MirrorType.None)
+        {
+            MirrorActive = MirrorType.Vertical;
+        }
+        else if(MirrorActive == MirrorType.Vertical)
+        {
+            MirrorActive = MirrorType.Horizontal;
+        }
+        else if(MirrorActive == MirrorType.Horizontal)
+        {
+            MirrorActive = MirrorType.Both;
+        }
+        else{
+            MirrorActive = MirrorType.None;
+        }
     }
 }
 
@@ -169,15 +194,20 @@ function ReDraw()
     }
 
         
-    if(MirrorActive)
+    if(MirrorActive != MirrorType.None)
     {
-        var ln = new Line(MirrorTestv.MirrorX, 0, MirrorTestv.MirrorX, 1000,"#000000");
-        ln.LineWidth = 1;
-        ln.Render(graphics);
-
-        var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY, 1000,"#000000");
-        lnh.LineWidth = 1;
-        lnh.Render(graphics);
+        if(MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Vertical)
+        {
+            var ln = new Line(MirrorTestv.MirrorX, 0, MirrorTestv.MirrorX, 1000,"#000000");
+            ln.LineWidth = 1;
+            ln.Render(graphics);
+        }
+        if(MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Horizontal)
+        {
+            var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY, 1000,"#000000");
+            lnh.LineWidth = 1;
+            lnh.Render(graphics);
+        }
     }
 
     DrawUserHotkeys(graphics);

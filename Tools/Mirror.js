@@ -5,7 +5,8 @@ var startID = 10000;
 const MirrorType = {
     Vertical: 0,
     Horizontal: 1,
-    Both: 2
+    Both: 2,
+    None: 3
 };
 
 class MirrorObj{
