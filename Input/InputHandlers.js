@@ -18,6 +18,8 @@ var MirrorTestv = new MirrorObj(MirrorType.Vertical, 800, 0);
 var MirrorTesth = new MirrorObj(MirrorType.Horizontal, 0, 500);
 var MirrorTestb = new MirrorObj(MirrorType.Both, 800, 500);
 
+var grid = new Grid(100);
+
 var CurrentShape = null;
 var MirrorActive = MirrorType.None;
 
@@ -27,8 +29,8 @@ function OnMouseDown(ev)
 {
     MouseDown = true;
 
-    MouseDownX = ev.clientX;
-    MouseDownY = ev.clientY;
+    MouseDownX = grid.GetMouseLock(ev.clientX);
+    MouseDownY = grid.GetMouseLock(ev.clientY);
 
     if(currentState == DrawingState.DrawCurve)
     {
@@ -79,8 +81,8 @@ function OnMouseUp(ev)
 
 function OnMouseMove(ev)
 {
-    MouseX = ev.clientX;
-    MouseY = ev.clientY;
+    MouseX = grid.GetMouseLock(ev.clientX);
+    MouseY = grid.GetMouseLock(ev.clientY);
 
     ClearCanvas(canvasObj, graphics);
 
@@ -99,6 +101,7 @@ function OnMouseMove(ev)
     ReDraw();
 }
 
+// MARK: keypress
 function OnKeyPress(ev)
 {
     ClearCanvas(canvasObj, graphics);
@@ -150,6 +153,11 @@ function OnKeyPress(ev)
             MirrorActive = MirrorType.None;
         }
     }
+
+    if(ev.key == HotKeys.Grid)
+    {
+        grid.Enabled = !grid.Enabled;
+    }
 }
 
 function OnMouseWheel(ev)
@@ -172,6 +180,10 @@ function ReDraw()
 {
     Builder.Build();
     Builder.Render(graphics);
+
+    var circ = new Circle(MouseX, MouseY, 10);
+    circ.LineWidth = 1;
+    circ.Render(graphics);
 
     if(MouseDown)
     {
