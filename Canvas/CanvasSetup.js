@@ -41,4 +41,13 @@ function DrawUserHotkeys(graphics)
     graphics.fillText("Save Shapes:", 100, 140);
     graphics.fillText(HotKeys.SaveShapes, 250, 140);
 
+    graphics.fillText("Toggle Mirror:", 100, 160);
+    graphics.fillText(HotKeys.Mirror, 250, 160);
+
+    graphics.fillText("Toggle Grid:", 100, 180);
+    graphics.fillText(HotKeys.Grid, 250, 180);
+
+    graphics.fillText("Next Shape:", 100, 200);
+    graphics.fillText(HotKeys.SelectNextShape, 250, 200);
+
 }

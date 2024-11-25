@@ -216,11 +216,17 @@ function ReDraw()
         }
         if(MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Horizontal)
         {
-            var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY, 1000,"#000000");
+            var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY,"#000000");
             lnh.LineWidth = 1;
             lnh.Render(graphics);
         }
     }
 
+    if(grid.Enabled)
+    {
+        grid.DrawGrid(graphics);
+    }
+
     DrawUserHotkeys(graphics);
 }
+

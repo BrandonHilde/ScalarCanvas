@@ -35,4 +35,21 @@ class Grid
             return value;
         }
     }
+
+    DrawGrid(graphics)
+    {
+        for(var x = this.Size; x < 2000; x+= this.Size)
+        {
+            for(var y = this.Size; y < 1200; y+= this.Size)
+            {
+                var lnh = new Line(x, 0, x, 1200,"#000000");
+                lnh.LineWidth = 1;
+                lnh.Render(graphics);
+
+                var lnh = new Line(0, y, 2000, y,"#000000");
+                lnh.LineWidth = 1;
+                lnh.Render(graphics);
+            }
+        }
+    }
 }
