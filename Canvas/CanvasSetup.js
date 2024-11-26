@@ -25,27 +25,47 @@ function ClearCanvas(CanvasObject, canvasContext)
     canvasContext.fill();
 }
 
+// need to refactor this function cause its bad
 function DrawUserHotkeys(graphics)
 {
-    graphics.fillStyle = "#99FF99";
+    var selectColor =  "#11FF99";
+    var noselectclr =  "#99FF99";
+
+    graphics.fillStyle = noselectclr;
     graphics.font = "bold 16px Arial";
     graphics.textAlign = 'left';
     graphics.textBaseline = 'middle';
 
+    if(currentState == DrawingState.AddCurve) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
+
     graphics.fillText("Add Curve:", 100, 100);
     graphics.fillText(HotKeys.AddCurve, 250, 100);
+
+    if(currentState == DrawingState.Edit) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
 
     graphics.fillText("Edit Mode:", 100, 120);
     graphics.fillText(HotKeys.EditMode, 250, 120);
 
+    graphics.fillStyle = noselectclr; //reset
+
     graphics.fillText("Save Shapes:", 100, 140);
     graphics.fillText(HotKeys.SaveShapes, 250, 140);
+
+    if(MirrorActive != MirrorType.None) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
 
     graphics.fillText("Toggle Mirror:", 100, 160);
     graphics.fillText(HotKeys.Mirror, 250, 160);
 
+    if(grid.Enabled) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
+
     graphics.fillText("Toggle Grid:", 100, 180);
     graphics.fillText(HotKeys.Grid, 250, 180);
+
+    graphics.fillStyle = noselectclr; //reset
 
     graphics.fillText("Next Shape:", 100, 200);
     graphics.fillText(HotKeys.SelectNextShape, 250, 200);

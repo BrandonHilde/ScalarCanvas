@@ -75,7 +75,7 @@ function OnMouseUp(ev)
         }
     }
 
-    if(MirrorActive != MirrorType.None)
+    if(MirrorActive != MirrorType.None && CurrentShape)
     {
         if(MirrorActive == MirrorType.Vertical || MirrorActive == MirrorType.Both)
         {
