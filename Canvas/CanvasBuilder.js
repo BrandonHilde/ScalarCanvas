@@ -40,21 +40,30 @@ class CanvasBuilder
         return this.objects[this.objects.length - 1];
     }
 
-    Build()
+    Build(canvas)
     {
         for(var v = 0; v < this.objects.length; v++)
         {
-            this.objects[v].Build();
+            this.objects[v].Build(canvas);
         }
     }
 
-    Render(canvas)
+    RenderAll(canvas)
     {
-		for(var v = 0; v < this.objects.length; v++)
+        for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Render(canvas);
         }
 
+        canvas.stroke();
+        canvas.fill();
+        canvas.beginPath();
+    }
+
+    Render(canvas)
+    {
+        this.Build(canvas);
+        
         canvas.stroke();
         canvas.fill();
         canvas.beginPath();

@@ -34,7 +34,19 @@ function OnMouseDown(ev)
 
     if(currentState == DrawingState.DrawCurve)
     {
-        StartCurve(MouseX, MouseY);
+        StartCurve(MouseDownX, MouseDownY);
+    }
+
+    if(currentState == DrawingState.AddCurve)
+    {
+        if(CurrentShape)
+        {   
+            AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
+        }
+        else
+        {
+            StartCurve(MouseDownX, MouseDownY);
+        }
     }
 
     if(currentState == DrawingState.Edit)
@@ -48,8 +60,19 @@ function OnMouseUp(ev)
     MouseDown = false;
 
     if(CurrentShape)
-    {
-        Builder.AddObject(CurrentShape);
+    {   
+        if(currentState == DrawingState.AddCurve)
+        {
+            // var last = CurrentShape.GetLatestObject();
+            // UpdateObject(last, PointType.xy, MouseX, MouseY);
+            // UpdateObject(last, PointType.c2, MouseX, MouseY);
+
+            // AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
+        }
+        else
+        {
+            Builder.AddObject(CurrentShape);
+        }
     }
 
     if(MirrorActive != MirrorType.None)
@@ -76,7 +99,7 @@ function OnMouseUp(ev)
         }
     }
 
-    CurrentShape = null;
+    if(currentState != DrawingState.AddCurve) CurrentShape = null;
 }
 
 function OnMouseMove(ev)
@@ -86,9 +109,20 @@ function OnMouseMove(ev)
 
     ClearCanvas(canvasObj, graphics);
 
+   if(CurrentShape)
+    { 
+        if(currentState == DrawingState.AddCurve)
+        {
+            var last = CurrentShape.GetLatestObject();
+            UpdateObject(last, PointType.xy, MouseX, MouseY);
+            UpdateObject(last, PointType.c2, MouseX, MouseY);
+
+            CurrentShape.Render(graphics);
+        }
+    }
+
     if(MouseDown)
     {
-
         if(currentState == DrawingState.Edit)
         {
             if(EditShape)
@@ -118,6 +152,20 @@ function OnKeyPress(ev)
     }
 
     if(ev.key == HotKeys.AddCurve)
+    {
+        if(currentState == DrawingState.AddCurve)
+        {
+            CurrentShape.RemoveLastObject();
+            Builder.AddObject(CurrentShape);
+            CurrentShape = null;
+        }
+        else
+        {
+            currentState = DrawingState.AddCurve;
+        }
+    }
+
+    if(ev.key == HotKeys.DrawCurve)
     {
         currentState = DrawingState.DrawCurve;
     }
@@ -176,9 +224,10 @@ function OnDrop(ev)
     handleFiles(files);
 }
 
+// MARK: redraw
 function ReDraw()
 {
-    Builder.Build();
+    Builder.Build(graphics);
     Builder.Render(graphics);
 
     var circ = new Circle(MouseX, MouseY, 10);
@@ -187,7 +236,6 @@ function ReDraw()
 
     if(MouseDown)
     {
-
         // tracks shape created with the mouse for DrawCurve
         if(currentState == DrawingState.DrawCurve)
         {
@@ -197,6 +245,11 @@ function ReDraw()
                 CurrentShape.Render(graphics);
             }
             
+        }
+
+        if(currentState == DrawingState.AddCurve)
+        {
+            CurrentShape.Render(graphics);
         }
     }
 

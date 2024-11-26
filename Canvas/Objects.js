@@ -17,6 +17,7 @@ class PathShape
         this.ObjType = ObjectType.Path;
 
         this.Style = "#FFFF00";
+        this.Fill = "#00000000";
 
         this.AddObject(new MoveTo(x, y));
     }
@@ -43,6 +44,11 @@ class PathShape
         }
 
         return bounds;
+    }
+
+    RemoveLastObject()
+    {
+        this.objects.pop();
     }
 
     AddObject(obj)
@@ -110,25 +116,27 @@ class PathShape
         };
     }
 
-    Build()
+    Build(canvas)
     {
+        canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
+
         for(var v = 0; v < this.objects.length; v++)
         {
-            this.objects[v].Build();
+            this.objects[v].Build(canvas);
         }
     }
 
     Render(canvas)
     {
+      
         canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
 
 		for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Render(canvas);
         }
-
-        canvas.stroke();
-        canvas.beginPath();
     }
 
     GetSvgData()
@@ -159,15 +167,15 @@ class MoveTo
         return new BoundingBox(this.X, this.Y, 1,1);
     }
 
-    Build()
+    Build(canvas)
     {
-
+        canvas.strokeStyle = this.Style;
+		canvas.moveTo(this.X, this.Y);
     }
 
     Render(canvas)
     {
-        canvas.strokeStyle = this.Style;
-		canvas.moveTo(this.X, this.Y);
+        this.Build(canvas);
     }
 
     GetSvgData()
@@ -193,9 +201,11 @@ class CurveTo
         this.ObjType = ObjectType.Curve;
     }
 
-    Build()
+    Build(canvas)
     {
-
+        canvas.strokeStyle = this.Style;
+        canvas.lineWidth = this.LineWidth;
+		canvas.bezierCurveTo(this.CX, this.CY, this.CX2, this.CY2, this.X, this.Y);
     }
 
     GetBoundingBox()
@@ -231,9 +241,10 @@ class CurveTo
 
     Render(canvas)
     {
-        canvas.strokeStyle = this.Style;
-        canvas.lineWidth = this.LineWidth;
-		canvas.bezierCurveTo(this.CX, this.CY, this.CX2, this.CY2, this.X, this.Y);
+        this.Build(canvas);
+
+        canvas.stroke();
+        canvas.fill();
     }
 
     GetSvgData()
@@ -256,12 +267,7 @@ class Circle
         this.ObjType = ObjectType.Circle;
     }
 
-    Build()
-    {
-
-    }
-
-    Render(canvas)
+    Build(canvas)
     {
         canvas.strokeStyle = this.Style;
         canvas.lineWidth = this.LineWidth;
@@ -273,8 +279,14 @@ class Circle
             0, 
             Math.PI * 2,
             false);	
+    }
 
+    Render(canvas)
+    {    
+        this.Build(canvas);
+        
         canvas.stroke();
+        canvas.fill();
     }
 }
 
@@ -293,12 +305,7 @@ class Line
         this.ObjType = ObjectType.Line;
     }
 
-    Build()
-    {
-
-    }
-
-    Render(canvas)
+    Build(canvas)
     {
         canvas.strokeStyle = this.Style;
         canvas.lineWidth = this.LineWidth;
@@ -306,8 +313,14 @@ class Line
         canvas.beginPath();
         canvas.moveTo(this.X, this.Y);
         canvas.lineTo(this.X2, this.Y2);
+    }
 
+    Render(canvas)
+    {
+        this.Build(canvas);
+        
         canvas.stroke();
+        canvas.fill();
     }
 }
 
@@ -335,7 +348,7 @@ class ImageDraw
         };
     }
 
-    Build()
+    Build(canvas)
     {
         if(this.Height == 0)
         {
