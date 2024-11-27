@@ -54,9 +54,6 @@ class CanvasBuilder
         {
             this.objects[v].Render(canvas);
         }
-
-        canvas.stroke();
-        canvas.fill();
         canvas.beginPath();
     }
 

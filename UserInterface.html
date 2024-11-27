@@ -30,7 +30,7 @@
             ClearCanvas(canvasObj, graphics);
 
             const Builder = new CanvasBuilder();
-            
+
             /// END OF CANVAS SETUP
 
             /// ENUMS
@@ -50,7 +50,8 @@
                 SelectNextShape: "n",
                 SaveShapes: "s",
                 Mirror: "m",
-                Grid: "g"
+                Grid: "g",
+                Color: "f"
             };
 
             var currentState = DrawingState.DrawCurve;
@@ -93,6 +94,29 @@
                 e.stopPropagation();
             });
             /// END OF USER INPUT
+
+        </script>
+
+        <div id="clrPicker" class="ColorPick" style="display: none;">
+            <input type="color" id="foreColor" value="#ff0000">
+            <input type="color" id="backColor" value="#ff0000">
+        </div>
+
+        <script>
+
+                const forePick = document.getElementById('foreColor');
+
+                forePick.addEventListener("change", ()=> 
+                {
+                    foreColor = forePick.value;
+                });
+
+                const backPick = document.getElementById('backColor');
+
+                backPick.addEventListener("change", ()=> 
+                {
+                    backColor = backPick.value;
+                });
 
         </script>
     </body>

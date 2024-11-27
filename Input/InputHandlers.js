@@ -140,6 +140,15 @@ function OnKeyPress(ev)
 {
     ClearCanvas(canvasObj, graphics);
     ReDraw();
+
+    if(ev.key == HotKeys.Color)
+    {
+        var clr = document.getElementById("clrPicker");
+
+        console.log(clr)
+
+        clr.style.display = "block";
+    }
     
     if(ev.key == HotKeys.EditMode)
     {
@@ -228,7 +237,7 @@ function OnDrop(ev)
 function ReDraw()
 {
     Builder.Build(graphics);
-    Builder.Render(graphics);
+    Builder.RenderAll(graphics);
 
     var circ = new Circle(MouseX, MouseY, 10);
     circ.LineWidth = 1;

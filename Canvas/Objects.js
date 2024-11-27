@@ -137,6 +137,8 @@ class PathShape
         {
             this.objects[v].Render(canvas);
         }
+
+        canvas.beginPath();
     }
 
     GetSvgData()

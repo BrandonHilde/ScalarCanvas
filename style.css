@@ -3,3 +3,19 @@ body{
     margin: 0;
     overflow: hidden;
 }
+
+.ColorPick{
+    position: absolute;
+    left:  100px;
+    top: 100px;
+}
+
+#foreColor{
+    width: 100px;
+    height: 100px;
+}
+
+#backColor{
+    width: 100px;
+    height: 100px;
+}

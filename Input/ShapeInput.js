@@ -33,8 +33,15 @@ function UpdateCurve(x, y) {
     }
 }
 
-function AddNewCurve(x, y, cx, cy, cx2, cy2) {
-    CurrentShape.AddObject(new CurveTo(x, y, cx, cy, cx2, cy2));
+function AddNewCurve(x, y, cx, cy, cx2, cy2) 
+{
+    var crv = new CurveTo(x, y, cx, cy, cx2, cy2);
+
+    var styl = foreColor;
+
+    crv.Style = styl;
+
+    CurrentShape.AddObject(crv);
 }
 
 function StartCurve(mx, my)

@@ -1,4 +1,5 @@
 var backColor = "#449944";
+var foreColor = "#99FF99";
 
 function BuildCanvas(canvasObject)
 {
@@ -29,7 +30,7 @@ function ClearCanvas(CanvasObject, canvasContext)
 function DrawUserHotkeys(graphics)
 {
     var selectColor =  "#11FF99";
-    var noselectclr =  "#99FF99";
+    var noselectclr =  foreColor;
 
     graphics.fillStyle = noselectclr;
     graphics.font = "bold 16px Arial";
