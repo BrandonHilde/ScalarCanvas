@@ -14,9 +14,9 @@ var mousePoints = [];
 var ShapeCutoff = 70;
 
 //temporary - remove later
-var MirrorTestv = new MirrorObj(MirrorType.Vertical, 800, 0);
-var MirrorTesth = new MirrorObj(MirrorType.Horizontal, 0, 500);
-var MirrorTestb = new MirrorObj(MirrorType.Both, 800, 500);
+var MirrorTestv;
+var MirrorTesth;
+var MirrorTestb;
 
 var grid = new Grid(100);
 
@@ -242,6 +242,16 @@ function ReDraw()
     var circ = new Circle(MouseX, MouseY, 10);
     circ.LineWidth = 1;
     circ.Render(graphics);
+
+    if(!MirrorTestb)
+    {
+        var w = canvasWidth;
+        var h = canvasHeight;
+
+        MirrorTestv = new MirrorObj(MirrorType.Vertical, w/2, 0);
+        MirrorTesth = new MirrorObj(MirrorType.Horizontal, 0, h/2);
+        MirrorTestb = new MirrorObj(MirrorType.Both, w/2, h/2);
+    }
 
     if(MouseDown)
     {

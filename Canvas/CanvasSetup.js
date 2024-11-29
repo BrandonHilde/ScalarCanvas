@@ -1,21 +1,24 @@
 var backColor = "#449944";
 var foreColor = "#99FF99";
 
+var canvasWidth = 0;
+var canvasHeight = 0;
+
 function BuildCanvas(canvasObject)
 {
-    var w = canvasObject.width;
-    var h = canvasObject.height;
+    canvasWidth = canvasObject.width;
+    canvasHeight = canvasObject.height;
         
-    w = window.innerWidth
+    canvasWidth = window.innerWidth
     || document.documentElement.clientWidth
     || document.body.clientWidth;
 
-    h = window.innerHeight
+    canvasHeight = window.innerHeight
     || document.documentElement.clientHeight
     || document.body.clientHeight;
 
-    canvasObject.width = w;
-    canvasObject.height = h * 1.2; // '* 1.2' prevents fullscreen from missing bottom
+    canvasObject.width = canvasWidth;
+    canvasObject.height = canvasHeight * 1.2; // '* 1.2' prevents fullscreen from missing bottom
 }
 
 function ClearCanvas(CanvasObject, canvasContext)
