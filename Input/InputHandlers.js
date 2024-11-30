@@ -18,8 +18,6 @@ var MirrorTestv;
 var MirrorTesth;
 var MirrorTestb;
 
-var grid = new Grid(100);
-
 var CurrentShape = null;
 var MirrorActive = MirrorType.None;
 
@@ -29,8 +27,12 @@ function OnMouseDown(ev)
 {
     MouseDown = true;
 
-    MouseDownX = grid.GetMouseLock(ev.clientX);
-    MouseDownY = grid.GetMouseLock(ev.clientY);
+    var pt = grid.GetMouseLock(ev.clientX, ev.clientY);
+
+    console.log(pt);
+
+    MouseDownX = pt.x;
+    MouseDownY = pt.y;
 
     if(currentState == DrawingState.DrawCurve)
     {
@@ -104,8 +106,10 @@ function OnMouseUp(ev)
 
 function OnMouseMove(ev)
 {
-    MouseX = grid.GetMouseLock(ev.clientX);
-    MouseY = grid.GetMouseLock(ev.clientY);
+    var pt = grid.GetMouseLock(ev.clientX, ev.clientY);
+
+    MouseX = pt.x;
+    MouseY = pt.y;
 
     ClearCanvas(canvasObj, graphics);
 
