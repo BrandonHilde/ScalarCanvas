@@ -27,6 +27,7 @@
 
             const graphics = canvasObj.getContext("2d");
 
+            // crisp drawing when (0.5, 0.0) due to float calculations
             graphics.translate(0.5, 0.0);
 
             ClearCanvas(canvasObj, graphics);
