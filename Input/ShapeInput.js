@@ -37,17 +37,17 @@ function AddNewCurve(x, y, cx, cy, cx2, cy2)
 {
     var crv = new CurveTo(x, y, cx, cy, cx2, cy2);
 
-    var styl = foreColor;
-
-    crv.Style = styl;
-
     CurrentShape.AddObject(crv);
 }
 
 function StartCurve(mx, my)
 {
     mousePoints = [];
+    
     CurrentShape = new PathShape(mx, my);
+
+    CurrentShape.Style = foreColor;
+
     AddNewCurve(mx, my, mx, my, mx, my);
 }
 

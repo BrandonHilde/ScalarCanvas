@@ -18,6 +18,7 @@ class PathShape
 
         this.Style = "#FFFF00";
         this.Fill = "#00000000";
+        this.LineWidth = 3;
 
         this.AddObject(new MoveTo(x, y));
     }
@@ -118,25 +119,22 @@ class PathShape
 
     Build(canvas)
     {
-        canvas.strokeStyle = this.Style;
-        canvas.fillStyle = this.Fill;
-
         for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Build(canvas);
         }
+
+        canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
+        canvas.lineWidth = this.LineWidth;
     }
 
     Render(canvas)
     {
-      
-        canvas.strokeStyle = this.Style;
-        canvas.fillStyle = this.Fill;
+        this.Build(canvas);
 
-		for(var v = 0; v < this.objects.length; v++)
-        {
-            this.objects[v].Render(canvas);
-        }
+        canvas.fill();
+        canvas.stroke();
 
         canvas.beginPath();
     }
@@ -171,7 +169,6 @@ class MoveTo
 
     Build(canvas)
     {
-        canvas.strokeStyle = this.Style;
 		canvas.moveTo(this.X, this.Y);
     }
 
@@ -205,8 +202,6 @@ class CurveTo
 
     Build(canvas)
     {
-        canvas.strokeStyle = this.Style;
-        canvas.lineWidth = this.LineWidth;
 		canvas.bezierCurveTo(this.CX, this.CY, this.CX2, this.CY2, this.X, this.Y);
     }
 

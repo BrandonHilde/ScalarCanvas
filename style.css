@@ -8,6 +8,11 @@ body{
     position: absolute;
     left:  100px;
     top: 100px;
+
+    padding: 20px;
+
+    background-color: #1e2841;
+    border-radius: 12px;
 }
 
 #foreColor{

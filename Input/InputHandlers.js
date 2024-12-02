@@ -149,8 +149,6 @@ function OnKeyPress(ev)
     {
         var clr = document.getElementById("clrPicker");
 
-        console.log(clr)
-
         clr.style.display = "block";
     }
     

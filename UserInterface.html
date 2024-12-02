@@ -27,7 +27,7 @@
 
             const graphics = canvasObj.getContext("2d");
 
-            graphics.translate(0.5, 0.5);
+            graphics.translate(0.5, 0.0);
 
             ClearCanvas(canvasObj, graphics);
 
@@ -65,15 +65,15 @@
                 OnKeyPress(e);
             });
 
-            document.addEventListener("mousedown", function (e) {
+            canvasObj.addEventListener("mousedown", function (e) {
                 OnMouseDown(e);
             });
 
-            document.addEventListener("mouseup", function (e) {
+            canvasObj.addEventListener("mouseup", function (e) {
                 OnMouseUp(e);
             });
 
-            document.addEventListener("mousemove", function (e) {
+            canvasObj.addEventListener("mousemove", function (e) {
 
                 OnMouseMove(e);
             });
@@ -100,6 +100,14 @@
         </script>
 
         <div id="clrPicker" class="ColorPick" style="display: none;">
+            <svg id="colorHide" style="float:right; cursor:pointer;" width="20" height="20">
+                <g>
+                    <path d="M3 3L 17 17M17 3L3 17" style="fill:none;stroke:rgb(255, 255, 255);stroke-width:3" />
+                </g>
+            </svg>
+            <br>
+            <hr>
+            
             <input type="color" id="foreColor" value="#ff0000">
             <input type="color" id="backColor" value="#ff0000">
         </div>
@@ -118,6 +126,15 @@
                 backPick.addEventListener("change", ()=> 
                 {
                     backColor = backPick.value;
+                });
+
+                const hide = document.getElementById('colorHide');
+
+                hide.addEventListener("click", ()=> 
+                {
+                    var clr = document.getElementById("clrPicker");
+
+                    clr.style.display = "none";
                 });
 
         </script>
