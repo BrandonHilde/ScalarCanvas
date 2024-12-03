@@ -119,6 +119,8 @@ class PathShape
 
     Build(canvas)
     {
+        canvas.beginPath();
+        
         for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Build(canvas);
