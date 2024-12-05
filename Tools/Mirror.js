@@ -28,6 +28,9 @@ class MirrorObj{
             shape.objects[v] = this.Mirror(Obj.objects[v]);
         }
 
+        shape.Style = Obj.Style;
+        shape.Fill = Obj.Fill;
+
         return shape;
     }
 

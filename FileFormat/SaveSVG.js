@@ -1,18 +1,22 @@
 function  SaveSVG(builder, width = 1000, height = 1000, cssStyle = "fill:none;stroke:green;stroke-width:3") 
 {  
     let pathData = "";
+    let svgStyle = cssStyle;
+
+    var filetxt = `<svg xmlns="http://www.w3.org/2000/svg" height="${height}" width="${width}">`;
 
     for(var v = 0; v < builder.objects.length; v++)
     {
         var obj = builder.objects[v];
         if(obj.ObjType == ObjectType.Path)
         {
-            pathData += obj.GetSvgData();
+            pathData = obj.GetSvgData(); 
+            svgStyle = `fill:${obj.Fill};stroke:${obj.Style};stroke-width:${obj.LineWidth}`;
+            filetxt += `<path d="${pathData}" style="${svgStyle}" />`;
         }
     }
 
-    const filetxt = `<svg xmlns="http://www.w3.org/2000/svg" height="${height}" width="${width}">
-    <path d="${pathData}" style="${cssStyle}" /></svg>`;
+    filetxt += "</svg>"
 
     return filetxt;
 }
