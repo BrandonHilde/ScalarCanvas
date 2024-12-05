@@ -161,12 +161,19 @@ class MoveTo
         this.X = x;
         this.Y = y;
 
+        this.AnchoredObjects = [];
+
         this.ObjType = ObjectType.Move;
     }
 
     GetBoundingBox()
     {
         return new BoundingBox(this.X, this.Y, 1,1);
+    }
+
+    AddAnchor(obj)
+    {
+        this.AnchoredObjects[this.AnchoredObjects.length] = obj;
     }
 
     Build(canvas)
@@ -199,7 +206,14 @@ class CurveTo
         this.Style = "#99FF99";
         this.LineWidth = 3;
 
+        this.AnchoredObjects = [];
+
         this.ObjType = ObjectType.Curve;
+    }
+
+    AddAnchor(obj)
+    {
+        this.AnchoredObjects[this.AnchoredObjects.length] = obj;
     }
 
     Build(canvas)

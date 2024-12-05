@@ -26,6 +26,9 @@ class MirrorObj{
         for(var v = 0; v < Obj.objects.length; v++)
         {
             shape.objects[v] = this.Mirror(Obj.objects[v]);
+
+            shape.objects[v].AddAnchor(Obj.objects[v]);
+            Obj.objects[v].AddAnchor(shape.objects[v]);
         }
 
         shape.Style = Obj.Style;

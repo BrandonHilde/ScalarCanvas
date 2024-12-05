@@ -8,6 +8,7 @@ function  SaveSVG(builder, width = 1000, height = 1000, cssStyle = "fill:none;st
     for(var v = 0; v < builder.objects.length; v++)
     {
         var obj = builder.objects[v];
+        
         if(obj.ObjType == ObjectType.Path)
         {
             pathData = obj.GetSvgData(); 

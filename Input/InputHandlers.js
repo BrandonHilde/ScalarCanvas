@@ -23,6 +23,12 @@ var MirrorActive = MirrorType.None;
 
 var EditShape = null;
 
+const MouseButtons = {
+    Left: 0,
+    Right: 2,
+    Middle: 1
+};
+
 function OnMouseDown(ev)
 {
     MouseDown = true;
@@ -43,7 +49,15 @@ function OnMouseDown(ev)
     {
         if(CurrentShape)
         {   
-            AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
+            if(ev.button == MouseButtons.Left)
+            {
+                AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
+            }
+            else
+            {
+                //console.log(ev.button);
+                EndCurve();
+            }
         }
         else
         {
@@ -166,9 +180,7 @@ function OnKeyPress(ev)
     {
         if(currentState == DrawingState.AddCurve)
         {
-            CurrentShape.RemoveLastObject();
-            Builder.AddObject(CurrentShape);
-            CurrentShape = null;
+            EndCurve();
         }
         else
         {
@@ -302,5 +314,12 @@ function ReDraw()
     }
 
     DrawUserHotkeys(graphics);
+}
+
+function EndCurve()
+{
+    //CurrentShape.RemoveLastObject();
+    Builder.AddObject(CurrentShape);
+    CurrentShape = null;
 }
 

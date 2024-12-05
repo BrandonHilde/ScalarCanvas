@@ -101,23 +101,36 @@ function UpdateObject(obj, type, x, y)
 {
     if(obj)
     {
-        if(type == PointType.xy)
+        if(obj.AnchoredObjects)
         {
-            obj.X = x;
-            obj.Y = y;
+            for(var v = 0; v < obj.AnchoredObjects.length; v++)
+            {
+                AssignObjValues(obj.AnchoredObjects[v], type, x, y);
+            }
         }
 
-        if(type == PointType.c)
-        {
-            obj.CX = x;
-            obj.CY = y;
-        }
+        AssignObjValues(obj, type, x, y);
+    }
+}
 
-        if(type == PointType.c2)
-        {
-            obj.CX2 = x;
-            obj.CY2 = y;
-        }
+function AssignObjValues(obj, type, x, y)
+{
+    if(type == PointType.xy)
+    {
+        obj.X = x;
+        obj.Y = y;
+    }
+
+    if(type == PointType.c)
+    {
+        obj.CX = x;
+        obj.CY = y;
+    }
+
+    if(type == PointType.c2)
+    {
+        obj.CX2 = x;
+        obj.CY2 = y;
     }
 }
 
