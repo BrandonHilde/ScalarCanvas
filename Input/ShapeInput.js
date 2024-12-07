@@ -105,7 +105,12 @@ function UpdateObject(obj, type, x, y)
         {
             for(var v = 0; v < obj.AnchoredObjects.length; v++)
             {
-                AssignObjValues(obj.AnchoredObjects[v], type, x, y);
+                var vrt = MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Vertical;
+                var hrt = MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Horizontal;
+
+                var pt = GetDif(obj, type, x, y, vrt, hrt);
+
+                AssignObjValues(obj.AnchoredObjects[v], type, pt.DX, pt.DY, true);
             }
         }
 
@@ -113,25 +118,81 @@ function UpdateObject(obj, type, x, y)
     }
 }
 
-function AssignObjValues(obj, type, x, y)
+function AssignObjValues(obj, type, x, y, anchor = false)
 {
     if(type == PointType.xy)
     {
-        obj.X = x;
-        obj.Y = y;
+        if(anchor)
+        {
+            obj.X -= x;
+            obj.Y -= y;
+        }
+        else
+        {
+            obj.X = x;
+            obj.Y = y;
+        }
     }
 
     if(type == PointType.c)
     {
-        obj.CX = x;
-        obj.CY = y;
+        if(anchor)
+        {
+            obj.CX -= x;
+            obj.CY -= y;
+        }
+        else
+        {
+            obj.CX = x;
+            obj.CY = y;
+        }
     }
 
     if(type == PointType.c2)
     {
-        obj.CX2 = x;
-        obj.CY2 = y;
+        if(anchor)
+        {
+            obj.CX2 -= x;
+            obj.CY2 -= y;
+        }
+        else
+        {
+            obj.CX2 = x;
+            obj.CY2 = y;
+        }
     }
+}
+
+function GetDif(obj, type, x, y, mirrorx = false, mirrory = false)
+{
+    var dx = 0;
+    var dy = 0;
+
+    if(type == PointType.xy)
+    {
+        dx = obj.X - x;
+        dy = obj.Y - y;
+    }
+
+    if(type == PointType.c)
+    {
+        dx = obj.CX - x;
+        dy = obj.CY - y;
+    }
+
+    if(type == PointType.c2)
+    {
+        dx = obj.CX2 - x;
+        dy = obj.CY2 - y;
+    }
+
+    if(mirrorx) dx *= -1;
+    if(mirrory) dy *= -1;
+
+    return {
+        DX: dx,
+        DY: dy
+    };
 }
 
 function DrawCircles(obj, graphics, radius)
