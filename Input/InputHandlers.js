@@ -55,6 +55,7 @@ function OnMouseDown(ev)
             }
             else
             {
+                AddMirror();
                 //console.log(ev.button);
                 EndCurve();
             }
@@ -91,31 +92,13 @@ function OnMouseUp(ev)
         }
     }
 
-    if(MirrorActive != MirrorType.None && CurrentShape)
-    {
-        if(MirrorActive == MirrorType.Vertical || MirrorActive == MirrorType.Both)
-        {
-            var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
+   
 
-            Builder.AddObject(mirrv);
-        }
-
-        if(MirrorActive == MirrorType.Horizontal || MirrorActive == MirrorType.Both)
-        {
-            var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
-
-            Builder.AddObject(mirrh);
-
-            if(MirrorActive == MirrorType.Both)
-            {
-                var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
-
-                Builder.AddObject(mirrb);
-            }
-        }
-    }
-
-    if(currentState != DrawingState.AddCurve) CurrentShape = null;
+    if(currentState != DrawingState.AddCurve)
+    { 
+        AddMirror();
+        CurrentShape = null;
+    };
 }
 
 function OnMouseMove(ev)
@@ -321,5 +304,32 @@ function EndCurve()
     //CurrentShape.RemoveLastObject();
     Builder.AddObject(CurrentShape);
     CurrentShape = null;
+}
+
+function AddMirror()
+{
+    if(MirrorActive != MirrorType.None && CurrentShape)
+    {
+        if(MirrorActive == MirrorType.Vertical || MirrorActive == MirrorType.Both)
+        {
+            var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
+
+            Builder.AddObject(mirrv);
+        }
+
+        if(MirrorActive == MirrorType.Horizontal || MirrorActive == MirrorType.Both)
+        {
+            var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
+
+            Builder.AddObject(mirrh);
+
+            if(MirrorActive == MirrorType.Both)
+            {
+                var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
+
+                Builder.AddObject(mirrb);
+            }
+        }
+    }
 }
 
