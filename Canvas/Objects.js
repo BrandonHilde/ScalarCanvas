@@ -5,7 +5,8 @@ const ObjectType = {
     Line: "line",
     Move: "move",
     Rectangle: "rect",
-    Image: "image"
+    Image: "image",
+    TextureRepeat: "texture"
 }
 
 class PathShape
@@ -334,6 +335,43 @@ class Line
         
         canvas.stroke();
         canvas.fill();
+    }
+}
+
+class TextureRepeat
+{
+    constructor(data, x, y, width, height)
+    {
+        this.Data = data;
+        this.X = x;
+        this.Y = y;
+        this.Width = width;
+        this.Height = height;
+        this.Image = new Image();
+
+        this.Image.src = this.Data;
+
+        this.ObjType = ObjectType.TextureRepeat;
+    }
+
+    GetNearestObject()
+    {
+        return {
+            Object: this,
+            Type: PointType.xy
+        };
+    }
+
+    Build(canvas)
+    {
+
+    }
+
+    Render(canvas)
+    {
+        const pattern = canvas.createPattern(this.Image, "repeat");
+        canvas.fillStyle = pattern;
+        canvas.fillRect(this.X, this.Y, this.Width, this.Height);
     }
 }
 

@@ -146,6 +146,12 @@ function OnKeyPress(ev)
     {
         var clr = document.getElementById("clrPicker");
 
+        var forePick = document.getElementById('foreColor');
+        var backPick = document.getElementById('backColor');
+
+        forePick.value = foreColor;
+        backPick.value = backColor;
+
         clr.style.display = "block";
     }
     
@@ -279,13 +285,13 @@ function ReDraw()
     {
         if(MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Vertical)
         {
-            var ln = new Line(MirrorTestv.MirrorX, 0, MirrorTestv.MirrorX, 1000,"#000000");
+            var ln = new Line(MirrorTestv.MirrorX, 0, MirrorTestv.MirrorX, 1000, aidColor);
             ln.LineWidth = 1;
             ln.Render(graphics);
         }
         if(MirrorActive == MirrorType.Both || MirrorActive == MirrorType.Horizontal)
         {
-            var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY,"#000000");
+            var lnh = new Line(0, MirrorTesth.MirrorY, 2000, MirrorTesth.MirrorY, aidColor);
             lnh.LineWidth = 1;
             lnh.Render(graphics);
         }

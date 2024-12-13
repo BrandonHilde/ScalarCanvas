@@ -1,5 +1,6 @@
 var backColor = "#449944";
 var foreColor = "#99FF99";
+var aidColor = "#7777AA";
 
 var canvasWidth = 0;
 var canvasHeight = 0;

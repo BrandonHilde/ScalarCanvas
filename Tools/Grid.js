@@ -60,11 +60,11 @@ class Grid
         {
             for(var y = (this.Size - this.OffsetY); y < 1200; y+= this.Size)
             {
-                var lnh = new Line(x, y - sx, x, y + sx,"#000000");
+                var lnh = new Line(x, y - sx, x, y + sx,aidColor);
                 lnh.LineWidth = 1;
                 lnh.Render(graphics);
 
-                var lnh = new Line(x - sx, y, x + sx, y,"#000000");
+                var lnh = new Line(x - sx, y, x + sx, y,aidColor);
                 lnh.LineWidth = 1;
                 lnh.Render(graphics);
             }
