@@ -239,6 +239,8 @@ function OnDrop(ev)
 // MARK: redraw
 function ReDraw()
 {
+    backtexture.Render(graphics);
+    
     Builder.Build(graphics);
     Builder.RenderAll(graphics);
 

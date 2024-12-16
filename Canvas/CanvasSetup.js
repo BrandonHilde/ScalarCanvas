@@ -5,6 +5,8 @@ var aidColor = "#7777AA";
 var canvasWidth = 0;
 var canvasHeight = 0;
 
+var backtexture = new TextureRepeat("img/clothDark.jpg", 0, 0, canvasWidth, canvasHeight);
+
 function BuildCanvas(canvasObject)
 {
     canvasWidth = canvasObject.width;
@@ -20,6 +22,8 @@ function BuildCanvas(canvasObject)
 
     canvasObject.width = canvasWidth;
     canvasObject.height = canvasHeight * 1.2; // '* 1.2' prevents fullscreen from missing bottom
+
+    backtexture = new TextureRepeat("img/clothDark.jpg", 0, 0, canvasWidth, canvasHeight);
 }
 
 function ClearCanvas(CanvasObject, canvasContext)
