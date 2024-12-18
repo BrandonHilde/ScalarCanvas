@@ -45,6 +45,12 @@ function DrawUserHotkeys(graphics)
     graphics.textAlign = 'left';
     graphics.textBaseline = 'middle';
 
+    if(currentState == DrawingState.DrawCurve) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
+
+    graphics.fillText("Draw Curve:", 100, 80);
+    graphics.fillText(HotKeys.DrawCurve, 250, 80);
+
     if(currentState == DrawingState.AddCurve) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
