@@ -4,9 +4,9 @@
         <script src="Math/Math.js"></script>
         <script src="Tools/Mirror.js"></script>
         <script src="Tools/Grid.js"></script>
+        <script src="Canvas/Objects.js"></script>
         <script src="Canvas/CanvasSetup.js"></script>
         <script src="Canvas/CanvasBuilder.js"></script>
-        <script src="Canvas/Objects.js"></script>
         <script src="Input/InputHandlers.js"></script>
         <script src="Input/ShapeInput.js"></script>
         <script src="FileFormat/SaveSVG.js"></script>
@@ -111,10 +111,30 @@
             
             <input type="color" id="foreColor" value="#ff0000">
             <input type="color" id="backColor" value="#ff0000">
+            <hr>
+
+            <h4>Grid Size</h4>
+            <input type="range" id="gridSize" min="10" max="250" value="100"><br>
+            <h4>Segment Frequency</h4>
+            <input type="range" id="segFrequency" min="40" max="250" value="70">
         </div>
 
         <script>
 
+                const gridSize = document.getElementById('gridSize');
+
+                gridSize.addEventListener("change", ()=> 
+                {
+                    grid.Size = parseInt(gridSize.value); //= new Grid(canvasWidth, canvasHeight, parseInt(gridSize.value));
+                    console.log(gridSize.value);
+                });
+                
+                const segFreq = document.getElementById('segFrequency');
+
+                segFreq.addEventListener("change", ()=> 
+                {
+                    ShapeCutoff = parseInt(segFreq.value);
+                });
                 const forePick = document.getElementById('foreColor');
 
                 forePick.addEventListener("change", ()=> 

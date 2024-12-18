@@ -14,6 +14,12 @@ class Grid
         console.log(this.OffsetX);
     }
 
+    CalcOffset()
+    {
+        this.OffsetX = this.Size - ((this.Width/2) % this.Size);
+        this.OffsetY = this.Size - ((this.Height/2) % this.Size);
+    }
+
     GetValue(value, offset)
     {
         var rm = (value % this.Size) + offset;

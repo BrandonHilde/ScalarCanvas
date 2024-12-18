@@ -4,6 +4,10 @@ body{
     overflow: hidden;
 }
 
+h4{
+    color: aliceblue;
+}
+
 .ColorPick{
     position: absolute;
     left:  100px;
