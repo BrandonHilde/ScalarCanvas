@@ -142,6 +142,13 @@ function OnKeyPress(ev)
     ClearCanvas(canvasObj, graphics);
     ReDraw();
 
+    if(ev.key == HotKeys.Delete)
+    {
+        Builder.RemoveObject(shapeIndex);
+
+        shapeIndex = 0;
+    }
+
     if(ev.key == HotKeys.Color)
     {
         var clr = document.getElementById("clrPicker");
@@ -270,8 +277,11 @@ function ReDraw()
             }
             
         }
+    }
 
-        if(currentState == DrawingState.AddCurve)
+    if(currentState == DrawingState.AddCurve)
+    {
+        if(CurrentShape != null)
         {
             CurrentShape.Render(graphics);
         }

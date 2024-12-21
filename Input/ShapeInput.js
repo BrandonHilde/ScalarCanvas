@@ -91,7 +91,10 @@ function GetNearestObject()
     {
         var last = Builder.objects[shapeIndex];
 
-        obj = last.GetNearestObject(MouseX, MouseY, 20);
+        if(last != null)
+        {
+            obj = last.GetNearestObject(MouseX, MouseY, 20);
+        }
     }
 
     return obj;
@@ -197,23 +200,26 @@ function GetDif(obj, type, x, y, mirrorx = false, mirrory = false)
 
 function DrawCircles(obj, graphics, radius)
 {
-    if(obj.objects)
+    if(obj != null)
     {
-        for(var v = 0; v < obj.objects.length; v++)
+        if(obj.objects)
         {
-            var sub = obj.objects[v];
-
-            DrawCircleXY(sub, graphics, radius);
-
-            if(sub.ObjType == ObjectType.Curve)
+            for(var v = 0; v < obj.objects.length; v++)
             {
-                DrawCurveXY(sub, graphics, radius);
+                var sub = obj.objects[v];
+
+                DrawCircleXY(sub, graphics, radius);
+
+                if(sub.ObjType == ObjectType.Curve)
+                {
+                    DrawCurveXY(sub, graphics, radius);
+                }
             }
         }
-    }
-    else
-    {
-        DrawCircleXY(obj, graphics, radius);
+        else
+        {
+            DrawCircleXY(obj, graphics, radius);
+        }
     }
 }
 

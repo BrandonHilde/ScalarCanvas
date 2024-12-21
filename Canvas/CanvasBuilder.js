@@ -30,6 +30,24 @@ class CanvasBuilder
         return bounds;
     }
 
+    RemoveObject(index)
+    {
+        if(index < this.objects.length && index > -1)
+        {
+            if (this.objects[index] != null) 
+            {
+                if(index == 0 && this.objects.length == 1)
+                {
+                    this.objects = [];
+                }
+                else
+                {
+                    this.objects.splice(index, 1);
+                }
+            }
+        }        
+    }
+
     AddObject(obj)
     {
         this.objects[this.objects.length] = obj;
@@ -44,7 +62,10 @@ class CanvasBuilder
     {
         for(var v = 0; v < this.objects.length; v++)
         {
-            this.objects[v].Build(canvas);
+            if(this.objects[v] != null)
+            {
+                this.objects[v].Build(canvas);
+            }
         }
     }
 
@@ -52,7 +73,10 @@ class CanvasBuilder
     {
         for(var v = 0; v < this.objects.length; v++)
         {
-            this.objects[v].Render(canvas);
+            if(this.objects[v] != null)
+            {
+                this.objects[v].Render(canvas);
+            }
         }
         canvas.beginPath();
     }
