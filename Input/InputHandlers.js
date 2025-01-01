@@ -13,6 +13,8 @@ var mousePoints = [];
 
 var ShapeCutoff = 70;
 
+var GraphicsScale = 1;
+
 //temporary - remove later
 var MirrorTestv;
 var MirrorTesth;
@@ -229,7 +231,8 @@ function OnKeyPress(ev)
 
 function OnMouseWheel(ev)
 {
-
+    GraphicsScale += ev.deltaY * -0.001;
+    GraphicsScale = Math.min(Math.max(0.125, GraphicsScale), 4);
 }
 
 function OnDrop(ev)
@@ -243,17 +246,33 @@ function OnDrop(ev)
     handleFiles(files);
 }
 
+function setTransformForDrawing(scale)
+{
+    var matrx = graphics.getTransform();
+
+    matrx.a = scale;
+    matrx.d = scale;
+
+    graphics.setTransform(matrx);
+}
+
 // MARK: redraw
 function ReDraw()
 {
     backtexture.Render(graphics);
+
+    setTransformForDrawing(GraphicsScale);
     
     Builder.Build(graphics);
     Builder.RenderAll(graphics);
 
+    setTransformForDrawing(1);
+
     var circ = new Circle(MouseX, MouseY, 10);
     circ.LineWidth = 1;
     circ.Render(graphics);
+
+    setTransformForDrawing(GraphicsScale);
 
     if(!MirrorTestb)
     {
@@ -287,6 +306,8 @@ function ReDraw()
         }
     }
 
+    setTransformForDrawing(1);
+
     if(currentState == DrawingState.Edit)
     {
         DrawCircles(Builder.objects[shapeIndex], graphics, 5);
@@ -309,10 +330,14 @@ function ReDraw()
         }
     }
 
+    setTransformForDrawing(GraphicsScale);
+
     if(grid.Enabled)
     {
         grid.DrawGrid(graphics);
     }
+
+    setTransformForDrawing(1);
 
     DrawUserHotkeys(graphics);
 }
