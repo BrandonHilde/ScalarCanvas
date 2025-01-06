@@ -85,4 +85,13 @@ function DrawUserHotkeys(graphics)
     graphics.fillText("Next Shape:", 100, 200);
     graphics.fillText(HotKeys.SelectNextShape, 250, 200);
 
+    graphics.fillText("Delete Shape:", 100, 220);
+    graphics.fillText(HotKeys.Delete, 250, 220);
+
+    graphics.fillText("Color Menu:", 100, 240);
+    graphics.fillText(HotKeys.Color, 250, 240);
+
+    graphics.fillText("Hide Cursor:", 100, 260);
+    graphics.fillText(HotKeys.HideCursor, 250, 260);
+
 }
