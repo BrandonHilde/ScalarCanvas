@@ -203,6 +203,17 @@ function OnKeyPress(ev)
         SaveToRawText(svg);
     }
 
+    if(ev.key == HotKeys.MoveShape)
+    {
+       var shp = Builder.objects[shapeIndex];
+
+       var bx = shp.GetBoundingBox();
+
+       bx.Render(graphics);
+
+       shp.MoveShapeToCenter(MouseX, MouseY);
+    }
+
     if(ev.key == HotKeys.HideCursor)
     {
         HideTheCursor = !HideTheCursor;

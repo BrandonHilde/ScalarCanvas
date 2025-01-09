@@ -99,4 +99,12 @@ class BoundingBox{
         this.Width = w;
         this.Height = h;
     }
+
+    Render(canvas)
+    {        
+        canvas.fillRect(this.X, this.Y, this.Width, this.Height);
+        canvas.stroke();
+        canvas.fill();
+        canvas.beginPath();
+    }
 }

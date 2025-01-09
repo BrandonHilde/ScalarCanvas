@@ -48,6 +48,42 @@ class PathShape
         return bounds;
     }
 
+    MoveShapeToCenter(x, y)
+    {
+        var bounds = this.GetBoundingBox();
+
+        var centx = bounds.X + (bounds.Width  / 2);
+        var centy = bounds.Y + (bounds.Height / 2);
+
+        console.log(bounds);
+
+        var difx = x - centx;
+        var dify = y - centy;
+
+        console.log(difx + " " + dify);
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            if(this.objects[v].X)
+            {
+                this.objects[v].X += difx;
+                this.objects[v].Y += dify;
+            }
+
+            if(this.objects[v].CX)
+            {
+                this.objects[v].CX += difx;
+                this.objects[v].CY += dify;
+            }
+
+            if(this.objects[v].CX2)
+            {
+                this.objects[v].CX2 += difx;
+                this.objects[v].CY2 += dify;
+            }
+        }
+    }
+
     RemoveLastObject()
     {
         this.objects.pop();
