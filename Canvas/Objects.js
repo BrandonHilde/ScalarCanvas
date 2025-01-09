@@ -32,6 +32,8 @@ class PathShape
         {
             var objB = this.objects[v].GetBoundingBox();
 
+            //TODO: make sure it takes not greatest width but greatest width between points
+
             if(bounds.X < 0) bounds.X = objB.X;
             else if(bounds.X > objB.X) bounds.X = objB.X;
 
@@ -268,25 +270,30 @@ class CurveTo
         if(this.X < x) x = this.X;
         if(this.X > w) w = this.X;
 
-        if(this.Y < y) y = this.X;
+        if(this.Y < y) y = this.Y;
         if(this.Y > h) h = this.Y;
 
         //c
         if(this.CX < x) x = this.CX;
         if(this.CX > w) w = this.CX;
 
-        if(this.CY < y) y = this.CX;
+        if(this.CY < y) y = this.CY;
         if(this.CY > h) h = this.CY;
 
         //c2
         if(this.CX2 < x) x = this.CX2;
         if(this.CX2 > w) w = this.CX2;
 
-        if(this.CY2 < y) y = this.CX2;
+        if(this.CY2 < y) y = this.CY2;
         if(this.CY2 > h) h = this.CY2;
 
+        var bndbx = new BoundingBox(x, y, w - x, h - y);
 
-        return new BoundingBox(x, y, w, h);
+        console.log(w + " " + h);
+
+        console.log(bndbx);
+
+        return bndbx;
     }
 
     Render(canvas)
