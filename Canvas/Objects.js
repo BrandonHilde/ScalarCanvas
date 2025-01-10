@@ -32,19 +32,25 @@ class PathShape
         {
             var objB = this.objects[v].GetBoundingBox();
 
-            //TODO: make sure it takes not greatest width but greatest width between points
-
             if(bounds.X < 0) bounds.X = objB.X;
             else if(bounds.X > objB.X) bounds.X = objB.X;
 
             if(bounds.Y < 0) bounds.Y = objB.Y;
             else if(bounds.Y > objB.Y) bounds.Y = objB.Y;
+        }
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            var objB = this.objects[v].GetBoundingBox();
+
+            var bndsx = objB.X + (objB.Width);
+            var bndsy = objB.Y + (objB.Height);
 
             if(bounds.Width < 0) bounds.Width = objB.Width;
-            else if(bounds.Width < objB.Width) bounds.Width = objB.Width;
+            else if(bounds.Width < bndsx - bounds.X) bounds.Width = bndsx - bounds.X;
 
             if(bounds.Height < 0) bounds.Height = objB.Height;
-            else if(bounds.Height < objB.Height) bounds.Height = objB.Height;
+            else if(bounds.Height < bndsy - bounds.Y) bounds.Height = bndsy - bounds.Y;
         }
 
         return bounds;
@@ -288,10 +294,6 @@ class CurveTo
         if(this.CY2 > h) h = this.CY2;
 
         var bndbx = new BoundingBox(x, y, w - x, h - y);
-
-        console.log(w + " " + h);
-
-        console.log(bndbx);
 
         return bndbx;
     }
