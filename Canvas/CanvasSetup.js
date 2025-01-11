@@ -94,4 +94,10 @@ function DrawUserHotkeys(graphics)
     graphics.fillText("Hide Cursor:", 100, 260);
     graphics.fillText(HotKeys.HideCursor, 250, 260);
 
+    graphics.fillText("Move Shape:", 100, 280);
+    graphics.fillText(HotKeys.MoveShape, 250, 280);
+
+    graphics.fillText("Duplicate Shape:", 100, 300);
+    graphics.fillText(HotKeys.CopyShape, 250, 300);
+
 }

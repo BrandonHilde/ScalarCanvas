@@ -24,6 +24,44 @@ class PathShape
         this.AddObject(new MoveTo(x, y));
     }
 
+    DuplicateAt(x, y)
+    {
+        var pathd = new PathShape(0,0);
+        pathd.objects.pop(); // remove the MoveTo
+
+        pathd.ObjType = this.ObjType;
+        pathd.Style = this.Style;
+        pathd.Fill = this.Fill;
+        pathd.LineWidth = this.LineWidth;
+        pathd.objects = [];
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            if(this.objects[v].ObjType == ObjectType.Move)
+                pathd.AddObject(new MoveTo(this.objects[v].X, this.objects[v].Y));
+
+            if(this.objects[v].ObjType == ObjectType.Curve)
+            {
+                var crv = new CurveTo(
+                    this.objects[v].X, 
+                    this.objects[v].Y, 
+                    this.objects[v].CX,
+                    this.objects[v].CY, 
+                    this.objects[v].CX2, 
+                    this.objects[v].CY2);
+                
+                crv.Sytle = this.objects[v].Style;
+                crv.LineWidth = this.objects[v].LineWidth;
+
+                pathd.AddObject(crv);
+            }
+        }
+
+        pathd.MoveShapeToCenter(x, y);
+
+        return pathd;
+    }
+
     GetBoundingBox()
     {
         var bounds = new BoundingBox(-1,-1,-1,-1);

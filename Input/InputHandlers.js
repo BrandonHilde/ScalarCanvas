@@ -207,11 +207,21 @@ function OnKeyPress(ev)
     {
        var shp = Builder.objects[shapeIndex];
 
-       var bx = shp.GetBoundingBox();
+       // var bx = shp.GetBoundingBox();
 
-       bx.Render(graphics);
+       // bx.Render(graphics);
 
        shp.MoveShapeToCenter(MouseX, MouseY);
+    }
+
+    if(ev.key == HotKeys.CopyShape)
+    {
+        var shp = Builder.objects[shapeIndex];
+        
+        if(shp.ObjType == ObjectType.Path)
+        {
+            Builder.AddObject(shp.DuplicateAt(MouseX, MouseY));
+        }
     }
 
     if(ev.key == HotKeys.HideCursor)
