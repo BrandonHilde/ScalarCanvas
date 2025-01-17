@@ -100,6 +100,38 @@ class BoundingBox{
         this.Height = h;
     }
 
+    GetResizeBox(w, h)
+    {
+        var bx = new BoundingBox(this.X, this.Y, this.Width, this.Height);
+
+        bx.X -= w;
+        bx.Y -= h;
+        bx.Width += w * 2;
+        bx.Height += h * 2;
+
+        return bx;
+    }
+
+    PointMap(x, y, OtherBox)
+    {
+        var nx = 0;
+        var ny = 0;
+
+        var difx = x - this.X;
+        var dify = y - this.Y;
+
+        var rx = OtherBox.Width / difx;
+        var ry = OtherBox.Height / dify;
+
+        nx = x * rx;
+        ny = y * ny;
+
+        return {
+            X: nx,
+            Y: ny
+        }
+    }
+
     Render(canvas)
     {        
         canvas.fillRect(this.X, this.Y, this.Width, this.Height);

@@ -463,6 +463,7 @@ class ImageDraw
     constructor(data, x, y, width)
     {
         this.Data = data;
+        console.log(data);
         this.X = x;
         this.Y = y;
         this.Width = width;
