@@ -120,11 +120,11 @@ class BoundingBox{
         var difx = x - this.X;
         var dify = y - this.Y;
 
-        var rx = OtherBox.Width / difx;
-        var ry = OtherBox.Height / dify;
+        var rx = difx / this.Width;
+        var ry = dify / this.Height;
 
-        nx = x * rx;
-        ny = y * ny;
+        nx = OtherBox.X + (rx * OtherBox.Width);
+        ny = OtherBox.Y + (ry * OtherBox.Height);
 
         return {
             X: nx,

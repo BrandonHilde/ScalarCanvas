@@ -274,7 +274,18 @@ function SetScale(ev)
 
 function OnMouseWheel(ev)
 {
-    SetScale(ev);
+    //SetScale(ev);
+
+    var shp = Builder.objects[shapeIndex];
+
+    if(ev.deltaY > 0)
+    {
+        shp.Resize(10, 10);
+    }
+    else
+    {
+        shp.Resize(-10, -10);
+    }
 
     ClearCanvas(canvasObj, graphics);
     ReDraw();

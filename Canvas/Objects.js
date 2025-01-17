@@ -130,6 +130,49 @@ class PathShape
         }
     }
 
+    Resize(w, h)
+    {
+        var bounds = this.GetBoundingBox();
+
+        var rebox = bounds.GetResizeBox(w, h);
+
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            if(this.objects[v].X)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].X, 
+                    this.objects[v].Y, 
+                    bounds);
+                
+                this.objects[v].X = px.X;
+                this.objects[v].Y = px.Y;
+            }
+
+            if(this.objects[v].CX)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].CX, 
+                    this.objects[v].CY, 
+                    bounds);
+                
+                this.objects[v].CX = px.X;
+                this.objects[v].CY = px.Y;
+            }
+
+            if(this.objects[v].CX2)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].CX2, 
+                    this.objects[v].CY2, 
+                    bounds);
+                
+                this.objects[v].CX2 = px.X;
+                this.objects[v].CY2 = px.Y;
+            }
+        }
+    }
+
     RemoveLastObject()
     {
         this.objects.pop();
