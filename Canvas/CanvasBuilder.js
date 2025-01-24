@@ -104,10 +104,15 @@ class BoundingBox{
     {
         var bx = new BoundingBox(this.X, this.Y, this.Width, this.Height);
 
-        bx.X -= w;
-        bx.Y -= h;
-        bx.Width += w * 2;
-        bx.Height += h * 2;
+        var ratio = this.Width / this.Height;
+
+        var wx = w * ratio;
+        var hx = h;
+
+        bx.X -= wx;
+        bx.Y -= hx;
+        bx.Width += wx * 2;
+        bx.Height += hx * 2;
 
         return bx;
     }

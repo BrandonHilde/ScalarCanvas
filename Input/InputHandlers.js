@@ -15,6 +15,7 @@ var mousePoints = [];
 var ShapeCutoff = 70;
 
 var GraphicsScale = 1;
+var resizeScale = 10;
 
 //temporary - remove later
 var MirrorTestv;
@@ -173,6 +174,11 @@ function OnKeyPress(ev)
         currentState = DrawingState.Edit;
     }
 
+    if(ev.key == HotKeys.ResizeMove)
+    {
+        currentState = DrawingState.ResizeMove;
+    }
+
     if(ev.key == HotKeys.AddCurve)
     {
         if(currentState == DrawingState.AddCurve)
@@ -276,15 +282,13 @@ function OnMouseWheel(ev)
 {
     //SetScale(ev);
 
-    var shp = Builder.objects[shapeIndex];
-
-    if(ev.deltaY > 0)
+    if(currentState == DrawingState.Edit)
     {
-        shp.Resize(10, 10);
+        ResizeSingle(ev);
     }
-    else
+    else if(currentState == DrawingState.ResizeMove)
     {
-        shp.Resize(-10, -10);
+        ResizeAll(ev);
     }
 
     ClearCanvas(canvasObj, graphics);
@@ -302,25 +306,56 @@ function OnDrop(ev)
     handleFiles(files);
 }
 
-// MARK: Set Transform
-function setTransformForDrawing(scale)
+function ResizeSingle(ev)
 {
-    var matrx = graphics.getTransform();
+    var shp = Builder.objects[shapeIndex];
 
-    matrx.a = scale;
-    matrx.d = scale;
-
-    var vw = canvasWidth * scale;
-    var vh = canvasHeight * scale;
-
-    var difh = canvasHeight - vh;
-    var difw = canvasWidth - vw;
-
-    matrx.e = difw / 2; // horizontal
-    matrx.f = difh / 2; // vertical
-
-    graphics.setTransform(matrx);
+    if(ev.deltaY > 0)
+    {
+        shp.Resize(resizeScale, resizeScale);
+    }
+    else
+    {
+        shp.Resize(-resizeScale, -resizeScale);
+    }
 }
+
+function ResizeAll(ev)
+{
+    for(var v = 0; v < Builder.objects.length; v++)
+    {
+        var shp = Builder.objects[v];
+
+        if(ev.deltaY > 0)
+        {
+            shp.Resize(resizeScale, resizeScale);
+        }
+        else
+        {
+            shp.Resize(-resizeScale, -resizeScale);
+        }
+    }
+}
+
+// MARK: Set Transform
+// function setTransformForDrawingDepricated(scale)
+// {
+//     var matrx = graphics.getTransform();
+
+//     matrx.a = scale;
+//     matrx.d = scale;
+
+//     var vw = canvasWidth * scale;
+//     var vh = canvasHeight * scale;
+
+//     var difh = canvasHeight - vh;
+//     var difw = canvasWidth - vw;
+
+//     matrx.e = difw / 2; // horizontal
+//     matrx.f = difh / 2; // vertical
+
+//     graphics.setTransform(matrx);
+// }
 
 function DrawCursor()
 {
@@ -334,7 +369,7 @@ function ReDraw()
 {
     backtexture.Render(graphics);
 
-    setTransformForDrawing(GraphicsScale);
+    //setTransformForDrawing(GraphicsScale);
     
     Builder.Build(graphics);
     Builder.RenderAll(graphics);
@@ -378,7 +413,7 @@ function ReDraw()
         DrawCircles(Builder.objects[shapeIndex], graphics, 5);
     }
 
-    setTransformForDrawing(1);
+    //setTransformForDrawing(1);
         
     if(MirrorActive != MirrorType.None)
     {
@@ -396,14 +431,14 @@ function ReDraw()
         }
     }
 
-    setTransformForDrawing(GraphicsScale);
+    //setTransformForDrawing(GraphicsScale);
 
     if(grid.Enabled)
     {
         grid.DrawGrid(graphics);
     }
 
-    setTransformForDrawing(1);
+    //setTransformForDrawing(1);
 
     DrawUserHotkeys(graphics);
     graphics.fillText(Math.round((GraphicsScale * 100)) + "%", 20, 20);
