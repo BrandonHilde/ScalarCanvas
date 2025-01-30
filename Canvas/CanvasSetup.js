@@ -40,6 +40,8 @@ function DrawUserHotkeys(graphics)
     var selectColor =  "#11FF99";
     var noselectclr =  foreColor;
 
+    var drawy = 80;
+
     graphics.fillStyle = noselectclr;
     graphics.font = "bold 16px Arial";
     graphics.textAlign = 'left';
@@ -48,56 +50,86 @@ function DrawUserHotkeys(graphics)
     if(currentState == DrawingState.DrawCurve) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Draw Curve:", 100, 80);
-    graphics.fillText(HotKeys.DrawCurve, 250, 80);
+    graphics.fillText("Draw Curve:", 100, drawy);
+    graphics.fillText(HotKeys.DrawCurve, 250, drawy);
+
+    drawy += 20
 
     if(currentState == DrawingState.AddCurve) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Add Curve:", 100, 100);
-    graphics.fillText(HotKeys.AddCurve, 250, 100);
+    graphics.fillText("Add Curve:", 100, drawy);
+    graphics.fillText(HotKeys.AddCurve, 250, drawy);
+
+    drawy += 20
+
+    if(currentState == DrawingState.ResizeMove) graphics.fillStyle = selectColor;
+    else  graphics.fillStyle = noselectclr;
+
+    graphics.fillText("Resize All:", 100, drawy);
+    graphics.fillText(HotKeys.ResizeMove, 250, drawy);
+
+    drawy += 20
 
     if(currentState == DrawingState.Edit) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Edit Mode:", 100, 120);
-    graphics.fillText(HotKeys.EditMode, 250, 120);
+    graphics.fillText("Edit Mode:", 100, drawy);
+    graphics.fillText(HotKeys.EditMode, 250, drawy);
+
+    drawy += 20
 
     graphics.fillStyle = noselectclr; //reset
 
-    graphics.fillText("Save Shapes:", 100, 140);
-    graphics.fillText(HotKeys.SaveShapes, 250, 140);
+    graphics.fillText("Save Shapes:", 100, drawy);
+    graphics.fillText(HotKeys.SaveShapes, 250, drawy);
+
+    drawy += 20
 
     if(MirrorActive != MirrorType.None) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Toggle Mirror:", 100, 160);
-    graphics.fillText(HotKeys.Mirror, 250, 160);
+    graphics.fillText("Toggle Mirror:", 100, drawy);
+    graphics.fillText(HotKeys.Mirror, 250, drawy);
+
+    drawy += 20
 
     if(grid.Enabled) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Toggle Grid:", 100, 180);
-    graphics.fillText(HotKeys.Grid, 250, 180);
+    graphics.fillText("Toggle Grid:", 100, drawy);
+    graphics.fillText(HotKeys.Grid, 250, drawy);
+
+    drawy += 20
 
     graphics.fillStyle = noselectclr; //reset
 
-    graphics.fillText("Next Shape:", 100, 200);
-    graphics.fillText(HotKeys.SelectNextShape, 250, 200);
+    graphics.fillText("Next Shape:", 100, drawy);
+    graphics.fillText(HotKeys.SelectNextShape, 250, drawy);
 
-    graphics.fillText("Delete Shape:", 100, 220);
-    graphics.fillText(HotKeys.Delete, 250, 220);
+    drawy += 20
 
-    graphics.fillText("Color Menu:", 100, 240);
-    graphics.fillText(HotKeys.Color, 250, 240);
+    graphics.fillText("Delete Shape:", 100, drawy);
+    graphics.fillText(HotKeys.Delete, 250, drawy);
 
-    graphics.fillText("Hide Cursor:", 100, 260);
-    graphics.fillText(HotKeys.HideCursor, 250, 260);
+    drawy += 20
 
-    graphics.fillText("Move Shape:", 100, 280);
-    graphics.fillText(HotKeys.MoveShape, 250, 280);
+    graphics.fillText("Color Menu:", 100, drawy);
+    graphics.fillText(HotKeys.Color, 250, drawy);
 
-    graphics.fillText("Duplicate Shape:", 100, 300);
-    graphics.fillText(HotKeys.CopyShape, 250, 300);
+    drawy += 20
+
+    graphics.fillText("Hide Cursor:", 100, drawy);
+    graphics.fillText(HotKeys.HideCursor, 250, drawy);
+
+    drawy += 20
+
+    graphics.fillText("Move Shape:", 100, drawy);
+    graphics.fillText(HotKeys.MoveShape, 250, drawy);
+
+    drawy += 20
+
+    graphics.fillText("Duplicate Shape:", 100, drawy);
+    graphics.fillText(HotKeys.CopyShape, 250, drawy);
 
 }
