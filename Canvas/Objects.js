@@ -130,10 +130,35 @@ class PathShape
         }
     }
 
-    Resize(w, h)
+    MoveShapeBy(x, y)
     {
-        var bounds = this.GetBoundingBox();
+        var difx = x;
+        var dify = y;
 
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            if(this.objects[v].X)
+            {
+                this.objects[v].X += difx;
+                this.objects[v].Y += dify;
+            }
+
+            if(this.objects[v].CX)
+            {
+                this.objects[v].CX += difx;
+                this.objects[v].CY += dify;
+            }
+
+            if(this.objects[v].CX2)
+            {
+                this.objects[v].CX2 += difx;
+                this.objects[v].CY2 += dify;
+            }
+        }
+    }
+
+    Resize(w, h, bounds)
+    {
         var rebox = bounds.GetResizeBox(w, h);
 
         for(var v = 0; v < this.objects.length; v++)

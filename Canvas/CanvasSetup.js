@@ -66,7 +66,7 @@ function DrawUserHotkeys(graphics)
     if(currentState == DrawingState.ResizeMove) graphics.fillStyle = selectColor;
     else  graphics.fillStyle = noselectclr;
 
-    graphics.fillText("Resize All:", 100, drawy);
+    graphics.fillText("Resize Move:", 100, drawy);
     graphics.fillText(HotKeys.ResizeMove, 250, drawy);
 
     drawy += 20

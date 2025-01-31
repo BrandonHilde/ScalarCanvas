@@ -107,6 +107,9 @@ function OnMouseMove(ev)
 {
     var pt = grid.GetMouseLock(ev.clientX, ev.clientY);
 
+    var difx = pt.x - MouseX;
+    var dify = pt.y - MouseY;
+
     MouseX = pt.x;
     MouseY = pt.y;
 
@@ -131,6 +134,13 @@ function OnMouseMove(ev)
             if(EditShape)
             {
                 UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
+            }
+        }
+        else if(currentState == DrawingState.ResizeMove)
+        {
+            for(var v = 0; v < Builder.objects.length; v++)
+            {
+                Builder.objects[v].MoveShapeBy(difx, dify);
             }
         }
     }
@@ -312,11 +322,11 @@ function ResizeSingle(ev)
 
     if(ev.deltaY > 0)
     {
-        shp.Resize(resizeScale, resizeScale);
+        shp.Resize(resizeScale, resizeScale, shp.GetBoundingBox());
     }
     else
     {
-        shp.Resize(-resizeScale, -resizeScale);
+        shp.Resize(-resizeScale, -resizeScale, shp.GetBoundingBox());
     }
 }
 
@@ -328,11 +338,11 @@ function ResizeAll(ev)
 
         if(ev.deltaY > 0)
         {
-            shp.Resize(resizeScale, resizeScale);
+            shp.Resize(resizeScale, resizeScale, Builder.GetBoundingBox());
         }
         else
         {
-            shp.Resize(-resizeScale, -resizeScale);
+            shp.Resize(-resizeScale, -resizeScale, Builder.GetBoundingBox());
         }
     }
 }
