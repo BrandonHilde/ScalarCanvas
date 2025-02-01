@@ -70,7 +70,9 @@ function OnMouseDown(ev)
 
     if(currentState == DrawingState.Edit)
     {
-        EditShape = GetNearestObject();      
+        EditShape = GetNearestObject();    
+        
+        console.log(EditShape);
     }
 }
 
@@ -134,7 +136,12 @@ function OnMouseMove(ev)
             if(EditShape)
             {
                 UpdateObject(EditShape.Object, EditShape.Type, MouseX, MouseY);
-            }
+
+                if(EditShape.Object == null)
+                {
+                    Builder.objects[shapeIndex].MoveShapeBy(difx, dify); 
+                }
+            }          
         }
         else if(currentState == DrawingState.ResizeMove)
         {
