@@ -119,7 +119,8 @@
             <input type="color" id="foreColor" value="#ff0000">
             <input type="color" id="backColor" value="#ff0000">
             <hr>
-
+            <h4>Line Width</h4>
+            <input type="range" id="lineWidth" min="1" max="20" value="3">
             <h4>Grid Size</h4>
             <input type="range" id="gridSize" min="10" max="250" value="100"><br>
             <h4>Segment Frequency</h4>
@@ -128,6 +129,14 @@
 
         <script>
 
+
+                const lineW = document.getElementById('lineWidth');
+
+                lineW.addEventListener("change", ()=> 
+                {
+                    LineWidth = parseInt(lineW.value); //= new Grid(canvasWidth, canvasHeight, parseInt(gridSize.value));
+                    console.log(lineW.value);
+                });
                 const gridSize = document.getElementById('gridSize');
 
                 gridSize.addEventListener("change", ()=> 

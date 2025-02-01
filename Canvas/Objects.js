@@ -543,6 +543,23 @@ class ImageDraw
         this.ObjType = ObjectType.Image;
     }
 
+    GetBoundingBox()
+    {
+        var bndbx = new BoundingBox(this.X, this.Y, this.Width, this.Height);
+
+        return bndbx;
+    }
+
+    Resize(w, h, bounds)
+    {
+        var rebox = bounds.GetResizeBox(w, h);
+
+        this.Width = rebox.Width;
+        this.Height = rebox.Height;
+        this.X = rebox.X;
+        this.Y = rebox.Y;
+    }
+
     GetNearestObject()
     {
         return {

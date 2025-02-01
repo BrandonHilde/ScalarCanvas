@@ -14,6 +14,8 @@ var mousePoints = [];
 
 var ShapeCutoff = 70;
 
+var LineWidth = 3;
+
 var GraphicsScale = 1;
 var resizeScale = 10;
 
@@ -71,8 +73,6 @@ function OnMouseDown(ev)
     if(currentState == DrawingState.Edit)
     {
         EditShape = GetNearestObject();    
-        
-        console.log(EditShape);
     }
 }
 
@@ -117,8 +117,8 @@ function OnMouseMove(ev)
 
     ClearCanvas(canvasObj, graphics);
 
-   if(CurrentShape)
-    { 
+    if(CurrentShape)
+    {
         if(currentState == DrawingState.AddCurve)
         {
             var last = CurrentShape.GetLatestObject();
@@ -131,6 +131,7 @@ function OnMouseMove(ev)
 
     if(MouseDown)
     {
+        //MARK: Move Shape
         if(currentState == DrawingState.Edit)
         {
             if(EditShape)
@@ -322,6 +323,8 @@ function OnDrop(ev)
 
     handleFiles(files);
 }
+
+//MARK: resize
 
 function ResizeSingle(ev)
 {

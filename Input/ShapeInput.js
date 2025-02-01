@@ -48,6 +48,8 @@ function StartCurve(mx, my)
 
     CurrentShape.Style = foreColor;
 
+    CurrentShape.LineWidth = LineWidth;
+
     AddNewCurve(mx, my, mx, my, mx, my);
 }
 
