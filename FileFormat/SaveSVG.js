@@ -42,11 +42,32 @@ function SaveToRawText(data)
     }
 }
 
+function handleFileSVG(files){
+    if (files.length > 0) {
+        const file = files[0];
+        
+        // Make sure the file is an image
+
+        if(file.type.startsWith('image/svg'))
+        {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                console.log(e.target.result);
+            }
+            
+            reader.readAsText(file);
+        }
+        
+    }
+}
+
 function handleFiles(files) {
     if (files.length > 0) {
         const file = files[0];
         
         // Make sure the file is an image
+
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             

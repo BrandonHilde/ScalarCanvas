@@ -312,7 +312,7 @@ function OnMouseWheel(ev)
     ClearCanvas(canvasObj, graphics);
     ReDraw();
 }
-
+//MARK: on drop
 function OnDrop(ev)
 {
     ev.preventDefault();
@@ -322,6 +322,8 @@ function OnDrop(ev)
     const files = dt.files;
 
     handleFiles(files);
+
+    handleFileSVG(files);
 }
 
 //MARK: resize
