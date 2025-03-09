@@ -171,7 +171,7 @@ function OnKeyPress(ev)
 
     if(ev.key == HotKeys.Color)
     {
-        var clr = document.getElementById("clrPicker");
+        var clr = document.getElementById("menu");
 
         var forePick = document.getElementById('foreColor');
         var backPick = document.getElementById('backColor');

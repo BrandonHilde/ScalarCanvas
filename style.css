@@ -11,7 +11,7 @@ h4{
 .ColorPick{
     position: absolute;
     left:  100px;
-    top: 100px;
+    top: 0px;
 
     padding: 20px;
 
@@ -27,4 +27,13 @@ h4{
 #backColor{
     width: 100px;
     height: 100px;
+}
+
+#menu{
+    display: block;
+    width: 700px;
+    position: absolute;
+    height: 1000px;
+    left: 0;
+    top: 100px;
 }

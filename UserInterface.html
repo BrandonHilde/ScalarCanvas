@@ -107,24 +107,38 @@
 
         </script>
 
-        <div id="clrPicker" class="ColorPick" style="display: none;">
-            <svg id="colorHide" style="float:right; cursor:pointer;" width="20" height="20">
+        <div id="menu" style="display: none;">
+            <svg id="menuHide" style="float:right; cursor:pointer;" width="20" height="20">
                 <g>
                     <path d="M3 3L 17 17M17 3L3 17" style="fill:none;stroke:rgb(255, 255, 255);stroke-width:3" />
                 </g>
             </svg>
-            <br>
-            <hr>
-            
-            <input type="color" id="foreColor" value="#ff0000">
-            <input type="color" id="backColor" value="#ff0000">
-            <hr>
-            <h4>Line Width</h4>
-            <input type="range" id="lineWidth" min="1" max="20" value="3">
-            <h4>Grid Size</h4>
-            <input type="range" id="gridSize" min="10" max="250" value="100"><br>
-            <h4>Segment Frequency</h4>
-            <input type="range" id="segFrequency" min="40" max="250" value="70">
+
+            <div id="clrPicker" class="ColorPick">
+               
+                <br>
+                <hr>
+                
+                <input type="color" id="foreColor" value="#ff0000">
+                <input type="color" id="backColor" value="#ff0000">
+                <hr>
+                <h4>Line Width</h4>
+                <input type="range" id="lineWidth" min="1" max="20" value="3">
+                <h4>Grid Size</h4>
+                <input type="range" id="gridSize" min="10" max="250" value="100"><br>
+                <h4>Segment Frequency</h4>
+                <input type="range" id="segFrequency" min="40" max="250" value="70">
+            </div>
+
+            <div id="listmenu" style="left:400px;" class="ColorPick">
+                <br>
+                <hr>
+                <div style="width: 200px; height: auto;">
+
+                </div>
+                
+             
+            </div>
         </div>
 
         <script>
@@ -165,11 +179,11 @@
                     backColor = backPick.value;
                 });
 
-                const hide = document.getElementById('colorHide');
+                const hide = document.getElementById('menuHide');
 
                 hide.addEventListener("click", ()=> 
                 {
-                    var clr = document.getElementById("clrPicker");
+                    var clr = document.getElementById("menu");
 
                     clr.style.display = "none";
                 });
