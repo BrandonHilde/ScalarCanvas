@@ -180,6 +180,8 @@ function OnKeyPress(ev)
         backPick.value = backColor;
 
         clr.style.display = "block";
+
+        UpdateMenu();
     }
     
     if(ev.key == HotKeys.EditMode)
@@ -498,5 +500,32 @@ function AddMirror()
             }
         }
     }
+}
+
+//MARK: update menu
+function UpdateMenu()
+{
+    var lst = document.getElementById("shapelist");
+
+    var temp = "";
+
+    for(var v = 0; v < Builder.objects.length; v++)
+    {
+        temp += '<div ';
+        
+        if(v == shapeIndex)
+        {
+            temp +='class="objSelect" ';
+        }
+        else
+        {
+             temp +='class="objNotSelect" ';
+        }
+
+        temp += '>' + Builder.objects[v].ObjType;
+        temp += '</div>';
+    }
+
+    lst.innerHTML = temp;
 }
 

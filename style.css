@@ -37,3 +37,15 @@ h4{
     left: 0;
     top: 100px;
 }
+
+.objSelect
+{
+    color: greenyellow;
+    cursor: pointer;
+}
+
+.objNotSelect
+{
+    color: wheat;
+    cursor: pointer;
+}
