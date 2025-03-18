@@ -515,14 +515,20 @@ function UpdateMenu()
         
         if(v == shapeIndex)
         {
-            temp +='class="objSelect" ';
+            temp +='class="objShape objSelect" ';
         }
         else
         {
-             temp +='class="objNotSelect" ';
+             temp +='class="objShape objNotSelect" ';
         }
 
-        temp += '>' + Builder.objects[v].ObjType;
+        var del =  "Builder.RemoveObject(" + v + ");";
+
+        temp += '><span>' + Builder.objects[v].ObjType 
+        + '<span><span style="float:right;" onclick="'
+        + del
+        + '">delete</span>';
+        
         temp += '</div>';
     }
 

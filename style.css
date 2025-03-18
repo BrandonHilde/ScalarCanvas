@@ -41,11 +41,17 @@ h4{
 .objSelect
 {
     color: greenyellow;
-    cursor: pointer;
+   
 }
 
 .objNotSelect
 {
     color: wheat;
+}
+
+.objShape
+{
+    border-bottom: 1px dashed wheat;
     cursor: pointer;
+    margin: 8px;
 }
