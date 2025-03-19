@@ -522,12 +522,12 @@ function UpdateMenu()
              temp +='class="objShape objNotSelect" ';
         }
 
-        var del =  "Builder.RemoveObject(" + v + ");";
+        var del =  "Builder.RemoveObject(" + v + "); UpdateMenu();";
 
         temp += '><span>' + Builder.objects[v].ObjType 
         + '<span><span style="float:right;" onclick="'
         + del
-        + '">delete</span>';
+        + '">x</span>';
         
         temp += '</div>';
     }
