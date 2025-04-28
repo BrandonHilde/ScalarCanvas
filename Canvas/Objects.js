@@ -455,6 +455,45 @@ class Circle
     }
 }
 
+class LineOfPoints
+{
+    constructor(points, style = "#99FF99")
+    {
+        this.Points = points;
+        this.Style = style;
+        this.LineWidth = 2;
+
+        this.ObjType = ObjectType.Line;
+    }
+
+    Build(canvas)
+    {
+        canvas.strokeStyle = this.Style;
+        canvas.lineWidth = this.LineWidth;
+
+        canvas.beginPath();
+
+        var pt = this.Points[0];
+
+        canvas.moveTo(pt.x, pt.y);
+
+        for(var v = 1; v < this.Points.length; v++)
+        {
+            pt = this.Points[v];
+
+            canvas.lineTo(pt.x, pt.y);
+        }
+    }
+
+    Render(canvas)
+    {
+        this.Build(canvas);
+        
+        canvas.stroke();
+        //canvas.fill();
+    }
+}
+
 class Line
 {
     constructor(x, y, x2, y2, style = "#99FF99")

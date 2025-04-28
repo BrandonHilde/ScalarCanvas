@@ -55,7 +55,22 @@ function StartCurve(mx, my)
 
 function ProccessCurve()
 {
-    mousePoints[mousePoints.length] = new Point(MouseX, MouseY);
+    var prev = mousePoints[mousePoints.length - 1];
+    var cur = new Point(MouseX, MouseY);
+
+    if(mousePoints.length > 0)
+    {
+        var dist = MathUtilities.getDistance(prev.x, prev.y, cur.x, cur.y);
+
+        for(v = 0; v < dist; v++)
+        {
+            mousePoints[mousePoints.length] = cur;
+        }
+    }
+    else
+    {
+        mousePoints[mousePoints.length] = cur;
+    }
 
     if(CurrentShape)
     {

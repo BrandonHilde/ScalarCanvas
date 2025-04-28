@@ -466,6 +466,13 @@ function ReDraw()
 
     DrawUserHotkeys(graphics);
     graphics.fillText(Math.round((GraphicsScale * 100)) + "%", 20, 20);
+
+    if(mousePoints.length > 2)
+    {
+        var ln = new LineOfPoints(mousePoints, "#FFFFFF");
+
+        ln.Render(graphics);
+    }
 }
 
 function EndCurve()
@@ -530,6 +537,29 @@ function UpdateMenu()
         + '">x</span>';
         
         temp += '</div>';
+
+        var objs = Builder.objects[v].objects;
+
+        for(var m = 0; m < objs.length; m++)
+        {
+            var del =  "Builder.RemoveSubObject(" + v + ", " + m +"); UpdateMenu();";
+
+            if(objs[m].ObjType == ObjectType.Move)
+            {
+
+            }
+            else
+            {
+                temp += '<div>';
+
+                temp += '<span>' + objs[m].ObjType 
+                + '<span><span style="float:right;" onclick="'
+                + del
+                + '">x</span>';
+
+                temp += '</div>';
+            }
+        }
     }
 
     lst.innerHTML = temp;

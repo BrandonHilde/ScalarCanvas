@@ -1,4 +1,4 @@
-function  SaveSVG(builder, width = 1000, height = 1000, cssStyle = "fill:none;stroke:green;stroke-width:3") 
+function  SaveSVG(builder, width = 3000, height = 3000, cssStyle = "fill:none;stroke:green;stroke-width:3") 
 {  
     let pathData = "";
     let svgStyle = cssStyle;

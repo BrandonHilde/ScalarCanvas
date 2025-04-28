@@ -48,6 +48,25 @@ class CanvasBuilder
         }        
     }
 
+    RemoveSubObject(index, target)
+    {
+        console.log(index, target);
+        if(index < this.objects.length && index > -1)
+        {
+            if (this.objects[index] != null) 
+            {
+                if(index == 0 && this.objects[index].objects.length == 1)
+                {
+                    this.objects[target].objects = []
+                }
+                else
+                {
+                    this.objects[index].objects.splice(target, 1);
+                }
+            }
+        }        
+    }
+
     AddObject(obj)
     {
         this.objects[this.objects.length] = obj;
