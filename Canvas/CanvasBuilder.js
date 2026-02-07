@@ -90,6 +90,7 @@ class CanvasBuilder
 
     RenderAll(canvas)
     {
+        // MARK: CHANGE HHOW RENDERALL WORKS
         for(var v = 0; v < this.objects.length; v++)
         {
             if(this.objects[v] != null)

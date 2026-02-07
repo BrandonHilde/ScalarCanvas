@@ -284,7 +284,17 @@ class PathShape
 
     Render(canvas)
     {
-        this.Build(canvas);
+        canvas.beginPath();
+        
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Build(canvas);
+            this.objects[v].Render(canvas);
+        }
+
+        canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
+        canvas.lineWidth = this.LineWidth;
 
         canvas.fill();
         canvas.stroke();
@@ -311,6 +321,9 @@ class MoveTo
     {
         this.X = x;
         this.Y = y;
+
+        this.Highlight = false;
+        this.HighlightStyle = "#FF0000";
 
         this.AnchoredObjects = [];
 
@@ -353,6 +366,9 @@ class CurveTo
         this.CY = cy;
         this.CX2 = cx2;
         this.CY2 = cy2;
+
+        this.Highlight = false;
+        this.HighlightStyle = "#FF0000";
 
         this.Style = "#99FF99";
         this.LineWidth = 3;
@@ -407,6 +423,13 @@ class CurveTo
     Render(canvas)
     {
         this.Build(canvas);
+
+        if(this.Highlight)
+        {
+            console.log("highlighting");
+            canvas.strokeStyle = this.HighlightStyle;
+            canvas.lineWidth = this.LineWidth + 3;
+        }
 
         canvas.stroke();
         canvas.fill();

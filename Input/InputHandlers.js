@@ -361,6 +361,19 @@ function ResizeAll(ev)
     }
 }
 
+function highlightSegment(pathI, objI)
+{
+    if(Builder.objects)
+    {
+
+        if(Builder.objects[pathI].objects[objI])
+        {
+            Builder.objects[pathI].objects[objI].Highlight = true;
+        }
+    }
+   
+}
+
 // MARK: Set Transform
 // function setTransformForDrawingDepricated(scale)
 // {
@@ -532,7 +545,7 @@ function UpdateMenu()
         var del =  "Builder.RemoveObject(" + v + "); UpdateMenu();";
 
         temp += '><span>' + Builder.objects[v].ObjType 
-        + '<span><span style="float:right;" onclick="'
+        + '<span><span style="float:right; cursor:pointer;" onclick="'
         + del
         + '">x</span>';
         
@@ -552,8 +565,10 @@ function UpdateMenu()
             {
                 temp += '<div>';
 
-                temp += '<span>' + objs[m].ObjType 
-                + '<span><span style="float:right;" onclick="'
+                temp += '<span class="highlight">' + objs[m].ObjType 
+                + '<span><span style="float:right;cursor:pointer;" ' 
+                + 'onmouseenter="highlightSegment(' + v + ',' + m +');" ' 
+                + 'onclick="'
                 + del
                 + '">x</span>';
 
