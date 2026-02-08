@@ -4,29 +4,155 @@ body{
     overflow: hidden;
 }
 
+/* ── Toolbar ───────────────────────────────────────── */
+#toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: #1a1d2e;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 4px;
+    z-index: 100;
+    border-bottom: 1px solid #2a2d3e;
+    user-select: none;
+}
+
+#toolbar .separator {
+    width: 1px;
+    height: 24px;
+    background: #2a2d3e;
+    margin: 0 4px;
+}
+
+#toolbar button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #8892b0;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+#toolbar button:hover {
+    background: #2a2d3e;
+    color: #ccd6f6;
+    border-color: #3a3d4e;
+}
+
+#toolbar button.active {
+    background: #2d4a3e;
+    color: #64ffda;
+    border-color: #3a6a5e;
+}
+
+#toolbar button.toggle-on {
+    background: #2a3a5e;
+    color: #82aaff;
+    border-color: #3a4a6e;
+}
+
+/* ── Status Bar ────────────────────────────────────── */
+#statusbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: #1a1d2e;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 16px;
+    z-index: 100;
+    border-top: 1px solid #2a2d3e;
+    font-family: monospace;
+    font-size: 11px;
+    color: #5a6080;
+    user-select: none;
+}
+
+#statusbar span {
+    color: #8892b0;
+}
+
+#statusbar .status-label {
+    color: #5a6080;
+}
+
+#statusbar .status-mode {
+    color: #64ffda;
+}
+
+/* ── Settings Panel ────────────────────────────────── */
 h4{
     color: aliceblue;
+    margin: 8px 0 4px 0;
+    font-size: 13px;
 }
 
 .ColorPick{
     position: absolute;
-    left:  100px;
+    left: 100px;
     top: 0px;
-
     padding: 20px;
-
     background-color: #1e2841;
     border-radius: 12px;
 }
 
+.color-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+}
+
+.color-row label {
+    color: #8892b0;
+    font-size: 12px;
+    width: 70px;
+}
+
 #foreColor{
-    width: 100px;
-    height: 100px;
+    width: 40px;
+    height: 30px;
+    border: 1px solid #3a3d4e;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 1px;
 }
 
 #backColor{
-    width: 100px;
-    height: 100px;
+    width: 40px;
+    height: 30px;
+    border: 1px solid #3a3d4e;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 1px;
+}
+
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.slider-row input[type="range"] {
+    flex: 1;
+}
+
+.slider-val {
+    color: #64ffda;
+    font-size: 12px;
+    font-family: monospace;
+    min-width: 28px;
+    text-align: right;
 }
 
 #menu{
@@ -41,7 +167,6 @@ h4{
 .objSelect
 {
     color: greenyellow;
-   
 }
 
 .objNotSelect

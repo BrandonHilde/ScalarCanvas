@@ -8,10 +8,6 @@ class Grid
         this.OffsetX = this.Size - ((this.Width/2) % this.Size);
         this.OffsetY = this.Size - ((this.Height/2) % this.Size);
         this.Enabled = false;
-
-        console.log(this.Width/2);
-
-        console.log(this.OffsetX);
     }
 
     CalcOffset()

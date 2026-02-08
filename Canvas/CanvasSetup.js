@@ -34,102 +34,61 @@ function ClearCanvas(CanvasObject, canvasContext)
     canvasContext.fill();
 }
 
-// need to refactor this function cause its bad
+// Replaced by HTML toolbar
 function DrawUserHotkeys(graphics)
 {
-    var selectColor =  "#11FF99";
-    var noselectclr =  foreColor;
+}
 
-    var drawy = 80;
+function UpdateToolbar()
+{
+    var buttons = document.querySelectorAll('#toolbar button[data-mode]');
+    for(var i = 0; i < buttons.length; i++)
+    {
+        buttons[i].classList.remove('active');
+        if(buttons[i].getAttribute('data-mode') === currentState)
+        {
+            buttons[i].classList.add('active');
+        }
+    }
 
-    graphics.fillStyle = noselectclr;
-    graphics.font = "bold 16px Arial";
-    graphics.textAlign = 'left';
-    graphics.textBaseline = 'middle';
+    var mirrorBtn = document.getElementById('btn-mirror');
+    if(mirrorBtn)
+    {
+        mirrorBtn.classList.remove('toggle-on');
+        if(MirrorActive == MirrorType.None) mirrorBtn.textContent = 'Mirror: Off';
+        else if(MirrorActive == MirrorType.Vertical) { mirrorBtn.textContent = 'Mirror: V'; mirrorBtn.classList.add('toggle-on'); }
+        else if(MirrorActive == MirrorType.Horizontal) { mirrorBtn.textContent = 'Mirror: H'; mirrorBtn.classList.add('toggle-on'); }
+        else if(MirrorActive == MirrorType.Both) { mirrorBtn.textContent = 'Mirror: Both'; mirrorBtn.classList.add('toggle-on'); }
+    }
 
-    if(currentState == DrawingState.DrawCurve) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
+    var gridBtn = document.getElementById('btn-grid');
+    if(gridBtn)
+    {
+        gridBtn.classList.remove('toggle-on');
+        if(grid.Enabled) gridBtn.classList.add('toggle-on');
+    }
+}
 
-    graphics.fillText("Draw Curve:", 100, drawy);
-    graphics.fillText(HotKeys.DrawCurve, 250, drawy);
+function UpdateStatusBar()
+{
+    var bar = document.getElementById('statusbar');
+    if(!bar) return;
 
-    drawy += 20
+    var modeStr = currentState;
+    var shapeStr = Builder.objects.length > 0
+        ? (shapeIndex + 1) + '/' + Builder.objects.length
+        : 'none';
 
-    if(currentState == DrawingState.AddCurve) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
+    var mirrorStr = 'Off';
+    if(MirrorActive == MirrorType.Vertical) mirrorStr = 'Vertical';
+    else if(MirrorActive == MirrorType.Horizontal) mirrorStr = 'Horizontal';
+    else if(MirrorActive == MirrorType.Both) mirrorStr = 'Both';
 
-    graphics.fillText("Add Curve:", 100, drawy);
-    graphics.fillText(HotKeys.AddCurve, 250, drawy);
+    var gridStr = grid.Enabled ? 'On' : 'Off';
 
-    drawy += 20
-
-    if(currentState == DrawingState.ResizeMove) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
-
-    graphics.fillText("Resize Move:", 100, drawy);
-    graphics.fillText(HotKeys.ResizeMove, 250, drawy);
-
-    drawy += 20
-
-    if(currentState == DrawingState.Edit) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
-
-    graphics.fillText("Edit Mode:", 100, drawy);
-    graphics.fillText(HotKeys.EditMode, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillStyle = noselectclr; //reset
-
-    graphics.fillText("Save Shapes:", 100, drawy);
-    graphics.fillText(HotKeys.SaveShapes, 250, drawy);
-
-    drawy += 20
-
-    if(MirrorActive != MirrorType.None) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
-
-    graphics.fillText("Toggle Mirror:", 100, drawy);
-    graphics.fillText(HotKeys.Mirror, 250, drawy);
-
-    drawy += 20
-
-    if(grid.Enabled) graphics.fillStyle = selectColor;
-    else  graphics.fillStyle = noselectclr;
-
-    graphics.fillText("Toggle Grid:", 100, drawy);
-    graphics.fillText(HotKeys.Grid, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillStyle = noselectclr; //reset
-
-    graphics.fillText("Next Shape:", 100, drawy);
-    graphics.fillText(HotKeys.SelectNextShape, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillText("Delete Shape:", 100, drawy);
-    graphics.fillText(HotKeys.Delete, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillText("Color Menu:", 100, drawy);
-    graphics.fillText(HotKeys.Color, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillText("Hide Cursor:", 100, drawy);
-    graphics.fillText(HotKeys.HideCursor, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillText("Move Shape:", 100, drawy);
-    graphics.fillText(HotKeys.MoveShape, 250, drawy);
-
-    drawy += 20
-
-    graphics.fillText("Duplicate Shape:", 100, drawy);
-    graphics.fillText(HotKeys.CopyShape, 250, drawy);
-
+    bar.innerHTML =
+        '<span class="status-label">Mode:</span> <span class="status-mode">' + modeStr + '</span>' +
+        '<span class="status-label">Shape:</span> <span>' + shapeStr + '</span>' +
+        '<span class="status-label">Mirror:</span> <span>' + mirrorStr + '</span>' +
+        '<span class="status-label">Grid:</span> <span>' + gridStr + '</span>';
 }

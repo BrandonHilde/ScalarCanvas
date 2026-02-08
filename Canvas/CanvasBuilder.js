@@ -32,10 +32,12 @@ class CanvasBuilder
 
     RemoveObject(index)
     {
+        var removed = null;
         if(index < this.objects.length && index > -1)
         {
-            if (this.objects[index] != null) 
+            if (this.objects[index] != null)
             {
+                removed = this.objects[index];
                 if(index == 0 && this.objects.length == 1)
                 {
                     this.objects = [];
@@ -45,12 +47,12 @@ class CanvasBuilder
                     this.objects.splice(index, 1);
                 }
             }
-        }        
+        }
+        return removed;
     }
 
     RemoveSubObject(index, target)
     {
-        console.log(index, target);
         if(index < this.objects.length && index > -1)
         {
             if (this.objects[index] != null) 

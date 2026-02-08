@@ -1,6 +1,8 @@
 var MouseDown = false;
 var HideTheCursor = false;
 
+var undoStack = [];
+
 // tracks current mouse location
 var MouseX = 0;
 var MouseY = 0;
@@ -93,10 +95,9 @@ function OnMouseUp(ev)
         else
         {
             Builder.AddObject(CurrentShape);
+            undoStack.push({ action: 'add', object: CurrentShape });
         }
     }
-
-   
 
     if(currentState != DrawingState.AddCurve)
     { 
@@ -164,7 +165,8 @@ function OnKeyPress(ev)
 
     if(ev.key == HotKeys.Delete)
     {
-        Builder.RemoveObject(shapeIndex);
+        var removed = Builder.RemoveObject(shapeIndex);
+        if(removed) undoStack.push({ action: 'delete', object: removed, index: shapeIndex });
 
         shapeIndex = 0;
     }
@@ -243,10 +245,12 @@ function OnKeyPress(ev)
     if(ev.key == HotKeys.CopyShape)
     {
         var shp = Builder.objects[shapeIndex];
-        
+
         if(shp.ObjType == ObjectType.Path)
         {
-            Builder.AddObject(shp.DuplicateAt(MouseX, MouseY));
+            var dup = shp.DuplicateAt(MouseX, MouseY);
+            Builder.AddObject(dup);
+            undoStack.push({ action: 'add', object: dup });
         }
     }
 
@@ -282,6 +286,8 @@ function OnKeyPress(ev)
     {
         grid.Enabled = !grid.Enabled;
     }
+
+    UpdateCursorForMode();
 }
 
 //MARK: Scale
@@ -477,8 +483,8 @@ function ReDraw()
 
     //setTransformForDrawing(1);
 
-    DrawUserHotkeys(graphics);
-    graphics.fillText(Math.round((GraphicsScale * 100)) + "%", 20, 20);
+    UpdateToolbar();
+    UpdateStatusBar();
 
     if(mousePoints.length > 2)
     {
@@ -492,6 +498,7 @@ function EndCurve()
 {
     //CurrentShape.RemoveLastObject();
     Builder.AddObject(CurrentShape);
+    undoStack.push({ action: 'add', object: CurrentShape });
     CurrentShape = null;
 }
 
@@ -504,6 +511,7 @@ function AddMirror()
             var mirrv = MirrorTestv.ReplicateAsMirror(CurrentShape);
 
             Builder.AddObject(mirrv);
+            undoStack.push({ action: 'add', object: mirrv });
         }
 
         if(MirrorActive == MirrorType.Horizontal || MirrorActive == MirrorType.Both)
@@ -511,12 +519,14 @@ function AddMirror()
             var mirrh = MirrorTesth.ReplicateAsMirror(CurrentShape);
 
             Builder.AddObject(mirrh);
+            undoStack.push({ action: 'add', object: mirrh });
 
             if(MirrorActive == MirrorType.Both)
             {
                 var mirrb = MirrorTestb.ReplicateAsMirror(CurrentShape);
 
                 Builder.AddObject(mirrb);
+                undoStack.push({ action: 'add', object: mirrb });
             }
         }
     }
@@ -578,5 +588,41 @@ function UpdateMenu()
     }
 
     lst.innerHTML = temp;
+}
+
+function UpdateCursorForMode()
+{
+    if(HideTheCursor) return;
+
+    if(currentState == DrawingState.DrawCurve || currentState == DrawingState.AddCurve)
+        canvasObj.style.cursor = 'crosshair';
+    else if(currentState == DrawingState.Move || currentState == DrawingState.ResizeMove)
+        canvasObj.style.cursor = 'move';
+    else if(currentState == DrawingState.Edit)
+        canvasObj.style.cursor = 'pointer';
+    else
+        canvasObj.style.cursor = 'default';
+}
+
+function Undo()
+{
+    if(undoStack.length == 0) return;
+
+    var entry = undoStack.pop();
+
+    if(entry.action == 'add')
+    {
+        var idx = Builder.objects.indexOf(entry.object);
+        if(idx > -1) Builder.RemoveObject(idx);
+    }
+    else if(entry.action == 'delete')
+    {
+        Builder.objects.splice(entry.index, 0, entry.object);
+    }
+
+    shapeIndex = Math.min(shapeIndex, Math.max(0, Builder.objects.length - 1));
+
+    ClearCanvas(canvasObj, graphics);
+    ReDraw();
 }
 
