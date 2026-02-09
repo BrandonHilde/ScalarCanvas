@@ -49,7 +49,7 @@ function StartCurve(mx, my)
     CurrentShape.Style = foreColor;
 
     CurrentShape.LineWidth = LineWidth;
-
+    
     AddNewCurve(mx, my, mx, my, mx, my);
 }
 
@@ -76,8 +76,8 @@ function ProccessCurve()
     {
         var last = CurrentShape.GetLatestObject();
 
-         last.X = MouseX;
-         last.Y = MouseY;
+        last.X = MouseX;
+        last.Y = MouseY;
 
         if (mousePoints.length > ShapeCutoff) 
         {

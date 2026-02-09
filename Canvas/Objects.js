@@ -288,7 +288,6 @@ class PathShape
         
         for(var v = 0; v < this.objects.length; v++)
         {
-            this.objects[v].Build(canvas);
             this.objects[v].Render(canvas);
         }
 
