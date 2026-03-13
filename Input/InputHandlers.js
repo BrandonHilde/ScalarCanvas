@@ -31,6 +31,17 @@ var MirrorActive = MirrorType.None;
 
 var EditShape = null;
 
+// Bounding box interaction state
+var bboxDragState = {
+    isDragging: false,
+    dragType: null, // 'move', 'nw', 'ne', 'sw', 'se', 'n', 's', 'e', 'w'
+    startX: 0,
+    startY: 0,
+    startBounds: null,
+    originalPoints: null, // Store original point positions for resize
+    handleSize: 10
+};
+
 const MouseButtons = {
     Left: 0,
     Right: 2,
@@ -57,6 +68,32 @@ function OnMouseDown(ev)
         {   
             if(ev.button == MouseButtons.Left)
             {
+                // Check if clicking near the start of the curve to close it
+                if(CurrentShape.objects.length > 0)
+                {
+                    var startObj = CurrentShape.objects[0];
+                    if(startObj.ObjType == ObjectType.Move)
+                    {
+                        var distToStart = Math.sqrt(
+                            Math.pow(MouseX - startObj.X, 2) + 
+                            Math.pow(MouseY - startObj.Y, 2)
+                        );
+                        
+                        // If within 20 pixels of start, close the curve
+                        if(distToStart < 20 && CurrentShape.objects.length > 2)
+                        {
+                            // Add a curve segment that connects back to the start
+                            var lastCurve = CurrentShape.GetLatestObject();
+                            if(lastCurve && lastCurve.ObjType == ObjectType.Curve)
+                            {
+                                UpdateObject(lastCurve, PointType.xy, startObj.X, startObj.Y);
+                            }
+                            AddMirror();
+                            EndCurve();
+                            return;
+                        }
+                    }
+                }
                 AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
             }
             else
@@ -72,15 +109,43 @@ function OnMouseDown(ev)
         }
     }
 
+    if(currentState == DrawingState.Move)
+    {
+        // Check if clicking on bounding box handles or inside the box
+        if(Builder.objects[shapeIndex])
+        {
+            var handle = GetHandleAtPoint(Builder.objects[shapeIndex], MouseX, MouseY, bboxDragState.handleSize);
+            
+            if(handle)
+            {
+                bboxDragState.isDragging = true;
+                bboxDragState.dragType = handle;
+                bboxDragState.startX = MouseX;
+                bboxDragState.startY = MouseY;
+                bboxDragState.startBounds = Builder.objects[shapeIndex].GetBoundingBox();
+                bboxDragState.originalPoints = SaveOriginalPoints(Builder.objects[shapeIndex]);
+            }
+        }
+    }
+
     if(currentState == DrawingState.Edit)
     {
-        EditShape = GetNearestObject();    
+        EditShape = GetNearestObject();
     }
 }
 
 function OnMouseUp(ev)
 {
     MouseDown = false;
+    
+    // Reset bounding box drag state
+    if(bboxDragState.isDragging)
+    {
+        bboxDragState.isDragging = false;
+        bboxDragState.dragType = null;
+        bboxDragState.startBounds = null;
+        bboxDragState.originalPoints = null;
+    }
 
     if(CurrentShape)
     {   
@@ -133,7 +198,21 @@ function OnMouseMove(ev)
     if(MouseDown)
     {
         //MARK: Move Shape
-        if(currentState == DrawingState.Edit)
+        if(currentState == DrawingState.Move)
+        {
+            if(bboxDragState.isDragging && Builder.objects[shapeIndex])
+            {
+                if(bboxDragState.dragType === 'move')
+                {
+                    MoveShape(Builder.objects[shapeIndex], difx, dify);
+                }
+                else if(bboxDragState.dragType && bboxDragState.dragType !== 'move')
+                {
+                    ResizeShape(Builder.objects[shapeIndex], bboxDragState.dragType, bboxDragState.startBounds, MouseX, MouseY, bboxDragState.originalPoints);
+                }
+            }
+        }
+        else if(currentState == DrawingState.Edit)
         {
             if(EditShape)
             {
@@ -175,15 +254,21 @@ function OnKeyPress(ev)
     {
         var clr = document.getElementById("menu");
 
-        var forePick = document.getElementById('foreColor');
-        var backPick = document.getElementById('backColor');
+        if(clr.style.display === "block")
+        {
+            clr.style.display = "none";
+        }
+        else
+        {
+            var forePick = document.getElementById('foreColor');
+            var backPick = document.getElementById('backColor');
 
-        forePick.value = foreColor;
-        backPick.value = backColor;
+            forePick.value = foreColor;
+            backPick.value = backColor;
 
-        clr.style.display = "block";
-
-        UpdateMenu();
+            clr.style.display = "block";
+            UpdateMenu();
+        }
     }
     
     if(ev.key == HotKeys.EditMode)
@@ -233,13 +318,8 @@ function OnKeyPress(ev)
 
     if(ev.key == HotKeys.MoveShape)
     {
-       var shp = Builder.objects[shapeIndex];
-
-       // var bx = shp.GetBoundingBox();
-
-       // bx.Render(graphics);
-
-       shp.MoveShapeToCenter(MouseX, MouseY);
+       currentState = DrawingState.Move;
+       UpdateCursorForMode();
     }
 
     if(ev.key == HotKeys.CopyShape)
@@ -448,12 +528,54 @@ function ReDraw()
         if(CurrentShape != null)
         {
             CurrentShape.Render(graphics);
+            
+            // Draw visual indicator when near start point
+            if(CurrentShape.objects.length > 2)
+            {
+                var startObj = CurrentShape.objects[0];
+                if(startObj.ObjType == ObjectType.Move)
+                {
+                    var distToStart = Math.sqrt(
+                        Math.pow(MouseX - startObj.X, 2) + 
+                        Math.pow(MouseY - startObj.Y, 2)
+                    );
+                    
+                    if(distToStart < 20)
+                    {
+                        // Draw a highlight circle around the start point
+                        graphics.beginPath();
+                        graphics.arc(startObj.X, startObj.Y, 12, 0, Math.PI * 2);
+                        graphics.strokeStyle = '#64ffda';
+                        graphics.lineWidth = 2;
+                        graphics.setLineDash([5, 5]);
+                        graphics.stroke();
+                        graphics.setLineDash([]);
+                        
+                        // Draw a smaller solid circle
+                        graphics.beginPath();
+                        graphics.arc(startObj.X, startObj.Y, 6, 0, Math.PI * 2);
+                        graphics.fillStyle = 'rgba(100, 255, 218, 0.3)';
+                        graphics.fill();
+                        graphics.strokeStyle = '#64ffda';
+                        graphics.lineWidth = 2;
+                        graphics.stroke();
+                    }
+                }
+            }
         }
     }
 
     if(currentState == DrawingState.Edit)
     {
         DrawCircles(Builder.objects[shapeIndex], graphics, 5);
+    }
+    
+    if(currentState == DrawingState.Move)
+    {
+        if(Builder.objects[shapeIndex])
+        {
+            DrawBoundingBox(Builder.objects[shapeIndex], graphics, bboxDragState.handleSize);
+        }
     }
 
     //setTransformForDrawing(1);
@@ -596,10 +718,37 @@ function UpdateCursorForMode()
 
     if(currentState == DrawingState.DrawCurve || currentState == DrawingState.AddCurve)
         canvasObj.style.cursor = 'crosshair';
-    else if(currentState == DrawingState.Move || currentState == DrawingState.ResizeMove)
+    else if(currentState == DrawingState.ResizeMove)
         canvasObj.style.cursor = 'move';
+    else if(currentState == DrawingState.Move)
+    {
+        // Check if hovering over bounding box handles
+        if(Builder.objects[shapeIndex] && !MouseDown)
+        {
+            var handle = GetHandleAtPoint(Builder.objects[shapeIndex], MouseX, MouseY, bboxDragState.handleSize);
+            
+            if(handle === 'move')
+                canvasObj.style.cursor = 'move';
+            else if(handle === 'nw' || handle === 'se')
+                canvasObj.style.cursor = 'nwse-resize';
+            else if(handle === 'ne' || handle === 'sw')
+                canvasObj.style.cursor = 'nesw-resize';
+            else if(handle === 'n' || handle === 's')
+                canvasObj.style.cursor = 'ns-resize';
+            else if(handle === 'e' || handle === 'w')
+                canvasObj.style.cursor = 'ew-resize';
+            else
+                canvasObj.style.cursor = 'default';
+        }
+        else
+        {
+            canvasObj.style.cursor = 'default';
+        }
+    }
     else if(currentState == DrawingState.Edit)
+    {
         canvasObj.style.cursor = 'pointer';
+    }
     else
         canvasObj.style.cursor = 'default';
 }

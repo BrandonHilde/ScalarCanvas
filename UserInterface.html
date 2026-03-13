@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
     <head>
         <script src="Math/Math.js"></script>
@@ -11,29 +11,99 @@
         <script src="Input/ShapeInput.js"></script>
         <script src="FileFormat/SaveSVG.js"></script>
 
-        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="style.css" />
     </head>
 
     <body>
-
         <!-- Toolbar -->
         <div id="toolbar">
-            <button data-mode="Draw Curves" title="Draw curve (D)" onclick="currentState = DrawingState.DrawCurve; UpdateCursorForMode();">Draw</button>
-            <button data-mode="Add Curves" title="Add curve (A)" onclick="currentState = DrawingState.AddCurve; UpdateCursorForMode();">Add Curve</button>
-            <button data-mode="Edit Mode" title="Edit mode (E)" onclick="currentState = DrawingState.Edit; UpdateCursorForMode();">Edit</button>
-            <button data-mode="Move Shape" title="Move shape (Z)" onclick="if(Builder.objects[shapeIndex]) Builder.objects[shapeIndex].MoveShapeToCenter(MouseX, MouseY);">Move</button>
-            <button data-mode="Resize and Move Canvas" title="Resize/move canvas (R)" onclick="currentState = DrawingState.ResizeMove; UpdateCursorForMode();">Resize</button>
+            <button
+                data-mode="Draw Curves"
+                title="Draw curve (D)"
+                onclick="
+                    currentState = DrawingState.DrawCurve;
+                    UpdateCursorForMode();
+                "
+            >
+                Draw
+            </button>
+            <button
+                data-mode="Add Curves"
+                title="Add curve (A). Click start point to close curve."
+                onclick="
+                    currentState = DrawingState.AddCurve;
+                    UpdateCursorForMode();
+                "
+            >
+                Add Curve
+            </button>
+            <button
+                data-mode="Edit Mode"
+                title="Edit mode (E). Click and drag points to edit curves."
+                onclick="
+                    currentState = DrawingState.Edit;
+                    UpdateCursorForMode();
+                "
+            >
+                Edit
+            </button>
+            <button
+                data-mode="Move Shape"
+                title="Move/Resize shape (Z). Drag box to move, drag handles to resize."
+                onclick="
+                    currentState = DrawingState.Move;
+                    UpdateCursorForMode();
+                "
+            >
+                Move
+            </button>
+            <button
+                data-mode="Resize and Move Canvas"
+                title="Resize/move canvas (R)"
+                onclick="
+                    currentState = DrawingState.ResizeMove;
+                    UpdateCursorForMode();
+                "
+            >
+                Resize
+            </button>
 
             <div class="separator"></div>
 
-            <button id="btn-mirror" title="Cycle mirror: None → V → H → Both (M)" onclick="cycleMirror();">Mirror: Off</button>
-            <button id="btn-grid" title="Toggle grid (G)" onclick="grid.Enabled = !grid.Enabled; ClearCanvas(canvasObj, graphics); ReDraw();">Grid</button>
+            <button
+                id="btn-mirror"
+                title="Cycle mirror: None → V → H → Both (M)"
+                onclick="cycleMirror()"
+            >
+                Mirror: Off
+            </button>
+            <button
+                id="btn-grid"
+                title="Toggle grid (G)"
+                onclick="
+                    grid.Enabled = !grid.Enabled;
+                    ClearCanvas(canvasObj, graphics);
+                    ReDraw();
+                "
+            >
+                Grid
+            </button>
 
             <div class="separator"></div>
 
-            <button title="Save SVG (S)" onclick="var box = Builder.GetBoundingBox(); SaveToRawText(SaveSVG(Builder, box.Width, box.Height));">Save</button>
-            <button title="Undo (Ctrl+Z)" onclick="Undo();">Undo</button>
-            <button title="Settings (F)" onclick="openSettings();">Settings</button>
+            <button
+                title="Save SVG (S)"
+                onclick="
+                    var box = Builder.GetBoundingBox();
+                    SaveToRawText(SaveSVG(Builder, box.Width, box.Height));
+                "
+            >
+                Save
+            </button>
+            <button title="Undo (Ctrl+Z)" onclick="Undo()">Undo</button>
+            <button title="Settings (F)" onclick="openSettings()">
+                Settings
+            </button>
         </div>
 
         <canvas id="drawingCanvas"></canvas>
@@ -42,9 +112,8 @@
         <div id="statusbar"></div>
 
         <script>
-
             /// CANVAS SETUP
-            const canvasObj = document.getElementById('drawingCanvas');
+            const canvasObj = document.getElementById("drawingCanvas");
 
             BuildCanvas(canvasObj);
 
@@ -69,7 +138,7 @@
                 ResizeMove: "Resize and Move Canvas",
                 Edit: "Edit Mode",
                 Move: "Move Shape",
-                DrawPolygon: "Draw Polygon"
+                DrawPolygon: "Draw Polygon",
             };
 
             const HotKeys = {
@@ -86,7 +155,7 @@
                 Delete: "x",
                 HideCursor: "h",
                 MoveShape: "z",
-                CopyShape: "c"
+                CopyShape: "c",
             };
 
             var currentState = DrawingState.DrawCurve;
@@ -95,32 +164,34 @@
 
             /// TOOLBAR HELPERS
 
-            function cycleMirror()
-            {
-                if(MirrorActive == MirrorType.None)
+            function cycleMirror() {
+                if (MirrorActive == MirrorType.None)
                     MirrorActive = MirrorType.Vertical;
-                else if(MirrorActive == MirrorType.Vertical)
+                else if (MirrorActive == MirrorType.Vertical)
                     MirrorActive = MirrorType.Horizontal;
-                else if(MirrorActive == MirrorType.Horizontal)
+                else if (MirrorActive == MirrorType.Horizontal)
                     MirrorActive = MirrorType.Both;
-                else
-                    MirrorActive = MirrorType.None;
+                else MirrorActive = MirrorType.None;
 
                 ClearCanvas(canvasObj, graphics);
                 ReDraw();
             }
 
-            function openSettings()
-            {
+            function openSettings() {
                 var clr = document.getElementById("menu");
-                var forePick = document.getElementById('foreColor');
-                var backPick = document.getElementById('backColor');
 
-                forePick.value = foreColor;
-                backPick.value = backColor;
+                if (clr.style.display === "block") {
+                    clr.style.display = "none";
+                } else {
+                    var forePick = document.getElementById("foreColor");
+                    var backPick = document.getElementById("backColor");
 
-                clr.style.display = "block";
-                UpdateMenu();
+                    forePick.value = foreColor;
+                    backPick.value = backColor;
+
+                    clr.style.display = "block";
+                    UpdateMenu();
+                }
             }
 
             /// END OF TOOLBAR HELPERS
@@ -131,8 +202,7 @@
             });
 
             document.addEventListener("keydown", function (e) {
-                if((e.ctrlKey || e.metaKey) && e.key === 'z')
-                {
+                if ((e.ctrlKey || e.metaKey) && e.key === "z") {
                     e.preventDefault();
                     Undo();
                 }
@@ -147,24 +217,23 @@
             });
 
             canvasObj.addEventListener("mousemove", function (e) {
-
                 OnMouseMove(e);
             });
 
-            document.addEventListener('wheel', function(e) {
+            document.addEventListener("wheel", function (e) {
                 OnMouseWheel(e);
             });
 
-            canvasObj.addEventListener('drop', function(e) {
+            canvasObj.addEventListener("drop", function (e) {
                 OnDrop(e);
             });
 
-            canvasObj.addEventListener('dragenter', function(e) {
+            canvasObj.addEventListener("dragenter", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
             });
 
-            canvasObj.addEventListener('dragover', function(e) {
+            canvasObj.addEventListener("dragover", function (e) {
                 e.preventDefault();
                 e.stopPropagation();
             });
@@ -172,110 +241,191 @@
 
             // Initial UI state
             UpdateCursorForMode();
-
         </script>
 
-        <div id="menu" style="display: none;">
-            <svg id="menuHide" style="float:right; cursor:pointer;" width="20" height="20">
+        <div id="menu" style="display: none">
+            <svg
+                id="menuHide"
+                style="float: right; cursor: pointer"
+                width="20"
+                height="20"
+            >
                 <g>
-                    <path d="M3 3L 17 17M17 3L3 17" style="fill:none;stroke:rgb(255, 255, 255);stroke-width:3" />
+                    <path
+                        d="M3 3L 17 17M17 3L3 17"
+                        style="
+                            fill: none;
+                            stroke: rgb(255, 255, 255);
+                            stroke-width: 3;
+                        "
+                    />
                 </g>
             </svg>
 
             <div id="clrPicker" class="ColorPick">
-
-                <br>
-                <hr>
+                <br />
+                <hr />
 
                 <div class="color-row">
                     <label>Stroke</label>
-                    <input type="color" id="foreColor" value="#ff0000">
+                    <input type="color" id="foreColor" value="#ff0000" />
                 </div>
                 <div class="color-row">
                     <label>Fill</label>
-                    <input type="color" id="backColor" value="#ff0000">
+                    <input type="color" id="backColor" value="#ff0000" />
                 </div>
-                <hr>
+                <hr />
                 <h4>Line Width</h4>
                 <div class="slider-row">
-                    <input type="range" id="lineWidth" min="1" max="20" value="3">
+                    <input
+                        type="range"
+                        id="lineWidth"
+                        min="1"
+                        max="20"
+                        value="3"
+                    />
                     <span class="slider-val" id="lineWidthVal">3</span>
                 </div>
                 <h4>Grid Size</h4>
                 <div class="slider-row">
-                    <input type="range" id="gridSize" min="10" max="250" value="100">
+                    <input
+                        type="range"
+                        id="gridSize"
+                        min="10"
+                        max="250"
+                        value="100"
+                    />
                     <span class="slider-val" id="gridSizeVal">100</span>
                 </div>
                 <h4>Segment Frequency</h4>
                 <div class="slider-row">
-                    <input type="range" id="segFrequency" min="40" max="250" value="70">
+                    <input
+                        type="range"
+                        id="segFrequency"
+                        min="40"
+                        max="250"
+                        value="70"
+                    />
                     <span class="slider-val" id="segFreqVal">70</span>
+                </div>
+
+                <hr />
+                <h4>Keyboard Shortcuts</h4>
+                <div class="hotkeys-list">
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Tab</span
+                        ><span class="hotkey-desc">Toggle drawing mode</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">D</span
+                        ><span class="hotkey-desc">Draw curve mode</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">A</span
+                        ><span class="hotkey-desc">Add curve (click start to close)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">E</span
+                        ><span class="hotkey-desc">Edit mode (edit points)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Z</span
+                        ><span class="hotkey-desc">Move/Resize mode (drag box)</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">R</span
+                        ><span class="hotkey-desc">Resize/move canvas</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">M</span
+                        ><span class="hotkey-desc">Cycle mirror mode</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">G</span
+                        ><span class="hotkey-desc">Toggle grid</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">S</span
+                        ><span class="hotkey-desc">Save SVG</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">F</span
+                        ><span class="hotkey-desc">Open settings</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">N</span
+                        ><span class="hotkey-desc">Select next shape</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">X</span
+                        ><span class="hotkey-desc">Delete</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">H</span
+                        ><span class="hotkey-desc">Hide cursor</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">C</span
+                        ><span class="hotkey-desc">Copy shape</span>
+                    </div>
+                    <div class="hotkey-item">
+                        <span class="hotkey-key">Ctrl+Z</span
+                        ><span class="hotkey-desc">Undo</span>
+                    </div>
                 </div>
             </div>
 
-            <div id="listmenu" style="left:400px;" class="ColorPick">
-                <br>
-                <hr>
-                <div id="shapelist" style="width: 200px; height: auto;">
-
-                </div>
-
-
+            <div id="listmenu" style="left: 500px" class="ColorPick">
+                <br />
+                <hr />
+                <div id="shapelist" style="width: 200px; height: auto"></div>
             </div>
         </div>
 
         <script>
+            const lineW = document.getElementById("lineWidth");
+            const lineWVal = document.getElementById("lineWidthVal");
 
-                const lineW = document.getElementById('lineWidth');
-                const lineWVal = document.getElementById('lineWidthVal');
+            lineW.addEventListener("input", () => {
+                LineWidth = parseInt(lineW.value);
+                lineWVal.textContent = lineW.value;
+            });
 
-                lineW.addEventListener("input", ()=>
-                {
-                    LineWidth = parseInt(lineW.value);
-                    lineWVal.textContent = lineW.value;
-                });
+            const gridSize = document.getElementById("gridSize");
+            const gridSizeVal = document.getElementById("gridSizeVal");
 
-                const gridSize = document.getElementById('gridSize');
-                const gridSizeVal = document.getElementById('gridSizeVal');
+            gridSize.addEventListener("input", () => {
+                grid.Size = parseInt(gridSize.value);
+                gridSizeVal.textContent = gridSize.value;
+            });
 
-                gridSize.addEventListener("input", ()=>
-                {
-                    grid.Size = parseInt(gridSize.value);
-                    gridSizeVal.textContent = gridSize.value;
-                });
+            const segFreq = document.getElementById("segFrequency");
+            const segFreqVal = document.getElementById("segFreqVal");
 
-                const segFreq = document.getElementById('segFrequency');
-                const segFreqVal = document.getElementById('segFreqVal');
+            segFreq.addEventListener("input", () => {
+                ShapeCutoff = parseInt(segFreq.value);
+                segFreqVal.textContent = segFreq.value;
+            });
 
-                segFreq.addEventListener("input", ()=>
-                {
-                    ShapeCutoff = parseInt(segFreq.value);
-                    segFreqVal.textContent = segFreq.value;
-                });
+            const forePick = document.getElementById("foreColor");
 
-                const forePick = document.getElementById('foreColor');
+            forePick.addEventListener("change", () => {
+                foreColor = forePick.value;
+            });
 
-                forePick.addEventListener("change", ()=>
-                {
-                    foreColor = forePick.value;
-                });
+            const backPick = document.getElementById("backColor");
 
-                const backPick = document.getElementById('backColor');
+            backPick.addEventListener("change", () => {
+                backColor = backPick.value;
+            });
 
-                backPick.addEventListener("change", ()=>
-                {
-                    backColor = backPick.value;
-                });
+            const hide = document.getElementById("menuHide");
 
-                const hide = document.getElementById('menuHide');
+            hide.addEventListener("click", () => {
+                var clr = document.getElementById("menu");
 
-                hide.addEventListener("click", ()=>
-                {
-                    var clr = document.getElementById("menu");
-
-                    clr.style.display = "none";
-                });
-
+                clr.style.display = "none";
+            });
         </script>
     </body>
 </html>

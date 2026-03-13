@@ -257,3 +257,246 @@ function DrawCurveXY(obj, graphics, radius)
 
     circ2.Render(graphics);
 }
+
+// Draw bounding box with resize handles
+function DrawBoundingBox(obj, graphics, handleSize)
+{
+    if(obj == null || obj.GetBoundingBox == null) return;
+    
+    var bbox = obj.GetBoundingBox();
+    if(bbox == null) return;
+    
+    var padding = 8;
+    var x = bbox.X - padding;
+    var y = bbox.Y - padding;
+    var w = bbox.Width + padding * 2;
+    var h = bbox.Height + padding * 2;
+    
+    // Draw bounding box outline
+    graphics.beginPath();
+    graphics.rect(x, y, w, h);
+    graphics.strokeStyle = '#64ffda';
+    graphics.lineWidth = 1;
+    graphics.setLineDash([5, 3]);
+    graphics.stroke();
+    graphics.setLineDash([]);
+    
+    // Draw handles
+    var handles = GetHandlePositions(x, y, w, h, handleSize);
+    
+    graphics.fillStyle = '#64ffda';
+    graphics.strokeStyle = '#1a1d2e';
+    graphics.lineWidth = 1;
+    
+    for(var key in handles)
+    {
+        var handle = handles[key];
+        graphics.beginPath();
+        graphics.rect(handle.x - handleSize/2, handle.y - handleSize/2, handleSize, handleSize);
+        graphics.fill();
+        graphics.stroke();
+    }
+    
+    return { x: x, y: y, width: w, height: h, handles: handles };
+}
+
+function GetHandlePositions(x, y, w, h, handleSize)
+{
+    return {
+        'nw': { x: x, y: y },
+        'n': { x: x + w/2, y: y },
+        'ne': { x: x + w, y: y },
+        'e': { x: x + w, y: y + h/2 },
+        'se': { x: x + w, y: y + h },
+        's': { x: x + w/2, y: y + h },
+        'sw': { x: x, y: y + h },
+        'w': { x: x, y: y + h/2 }
+    };
+}
+
+function GetHandleAtPoint(obj, px, py, handleSize)
+{
+    if(obj == null || obj.GetBoundingBox == null) return null;
+    
+    var bbox = obj.GetBoundingBox();
+    if(bbox == null) return null;
+    
+    var padding = 8;
+    var x = bbox.X - padding;
+    var y = bbox.Y - padding;
+    var w = bbox.Width + padding * 2;
+    var h = bbox.Height + padding * 2;
+    
+    var handles = GetHandlePositions(x, y, w, h, handleSize);
+    
+    for(var key in handles)
+    {
+        var handle = handles[key];
+        if(Math.abs(px - handle.x) <= handleSize && Math.abs(py - handle.y) <= handleSize)
+        {
+            return key;
+        }
+    }
+    
+    // Check if inside bounding box (for move)
+    if(px >= x && px <= x + w && py >= y && py <= y + h)
+    {
+        return 'move';
+    }
+    
+    return null;
+}
+
+function MoveShape(obj, dx, dy)
+{
+    if(obj == null || obj.objects == null) return;
+    
+    for(var v = 0; v < obj.objects.length; v++)
+    {
+        var sub = obj.objects[v];
+        
+        if(sub.ObjType == ObjectType.Move)
+        {
+            sub.X += dx;
+            sub.Y += dy;
+        }
+        else if(sub.ObjType == ObjectType.Curve)
+        {
+            sub.X += dx;
+            sub.Y += dy;
+            sub.CX += dx;
+            sub.CY += dy;
+            sub.CX2 += dx;
+            sub.CY2 += dy;
+        }
+    }
+}
+
+function ResizeShape(obj, handle, startBounds, currentX, currentY, originalPoints)
+{
+    if(obj == null || obj.objects == null || startBounds == null || originalPoints == null) return;
+    
+    var padding = 8;
+    // The handles are drawn with padding, so we need to account for that
+    // Handle positions are at: bbox.X - padding, bbox.Y - padding, etc.
+    var startMinX = startBounds.X;
+    var startMinY = startBounds.Y;
+    var startMaxX = startBounds.X + startBounds.Width;
+    var startMaxY = startBounds.Y + startBounds.Height;
+    var startW = startBounds.Width;
+    var startH = startBounds.Height;
+    
+    // Calculate new bounds based on handle
+    // The mouse is at the handle position (which includes padding)
+    // We need to subtract padding to get the actual shape bounds
+    var newMinX = startMinX;
+    var newMinY = startMinY;
+    var newMaxX = startMaxX;
+    var newMaxY = startMaxY;
+    
+    switch(handle)
+    {
+        case 'nw':
+            newMinX = currentX + padding;
+            newMinY = currentY + padding;
+            break;
+        case 'n':
+            newMinY = currentY + padding;
+            break;
+        case 'ne':
+            newMaxX = currentX - padding;
+            newMinY = currentY + padding;
+            break;
+        case 'e':
+            newMaxX = currentX - padding;
+            break;
+        case 'se':
+            newMaxX = currentX - padding;
+            newMaxY = currentY - padding;
+            break;
+        case 's':
+            newMaxY = currentY - padding;
+            break;
+        case 'sw':
+            newMinX = currentX + padding;
+            newMaxY = currentY - padding;
+            break;
+        case 'w':
+            newMinX = currentX + padding;
+            break;
+    }
+    
+    // Ensure proper ordering (handle negative sizes)
+    var finalMinX = Math.min(newMinX, newMaxX);
+    var finalMaxX = Math.max(newMinX, newMaxX);
+    var finalMinY = Math.min(newMinY, newMaxY);
+    var finalMaxY = Math.max(newMinY, newMaxY);
+    
+    // Enforce minimum size of 10 pixels
+    if(finalMaxX - finalMinX < 10) finalMaxX = finalMinX + 10;
+    if(finalMaxY - finalMinY < 10) finalMaxY = finalMinY + 10;
+    
+    var newW = finalMaxX - finalMinX;
+    var newH = finalMaxY - finalMinY;
+    
+    // Apply transformation to all objects based on original positions
+    for(var v = 0; v < obj.objects.length; v++)
+    {
+        var sub = obj.objects[v];
+        var orig = originalPoints[v];
+        
+        if(sub.ObjType == ObjectType.Move)
+        {
+            // Map from old coordinate space to new
+            var relX = (orig.X - startMinX) / startW;
+            var relY = (orig.Y - startMinY) / startH;
+            sub.X = finalMinX + relX * newW;
+            sub.Y = finalMinY + relY * newH;
+        }
+        else if(sub.ObjType == ObjectType.Curve)
+        {
+            var relX = (orig.X - startMinX) / startW;
+            var relY = (orig.Y - startMinY) / startH;
+            var relCX = (orig.CX - startMinX) / startW;
+            var relCY = (orig.CY - startMinY) / startH;
+            var relCX2 = (orig.CX2 - startMinX) / startW;
+            var relCY2 = (orig.CY2 - startMinY) / startH;
+            
+            sub.X = finalMinX + relX * newW;
+            sub.Y = finalMinY + relY * newH;
+            sub.CX = finalMinX + relCX * newW;
+            sub.CY = finalMinY + relCY * newH;
+            sub.CX2 = finalMinX + relCX2 * newW;
+            sub.CY2 = finalMinY + relCY2 * newH;
+        }
+    }
+}
+
+// Helper function to save original point positions for resize
+function SaveOriginalPoints(obj)
+{
+    if(obj == null || obj.objects == null) return null;
+    
+    var points = [];
+    for(var v = 0; v < obj.objects.length; v++)
+    {
+        var sub = obj.objects[v];
+        if(sub.ObjType == ObjectType.Move)
+        {
+            points.push({ X: sub.X, Y: sub.Y });
+        }
+        else if(sub.ObjType == ObjectType.Curve)
+        {
+            points.push({
+                X: sub.X, Y: sub.Y,
+                CX: sub.CX, CY: sub.CY,
+                CX2: sub.CX2, CY2: sub.CY2
+            });
+        }
+        else
+        {
+            points.push({});
+        }
+    }
+    return points;
+}
