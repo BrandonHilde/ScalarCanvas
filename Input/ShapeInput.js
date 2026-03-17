@@ -8,6 +8,8 @@ const PointType = {
     c2: "c2"
 };
 
+var currentEditMode = EditModeType.Points;
+
 function UpdateCurve(x, y) {
     if (mousePoints.length > 4) {
         var num1 = parseInt(mousePoints.length / 4);
@@ -110,7 +112,7 @@ function GetNearestObject()
 
         if(last != null)
         {
-            obj = last.GetNearestObject(MouseX, MouseY, 20);
+            obj = last.GetNearestObject(MouseX, MouseY, 20, currentEditMode);
         }
     }
 
@@ -215,7 +217,7 @@ function GetDif(obj, type, x, y, mirrorx = false, mirrory = false)
     };
 }
 
-function DrawCircles(obj, graphics, radius)
+function DrawCircles(obj, graphics, radius, editMode = EditModeType.Points)
 {
     if(obj != null)
     {
@@ -225,17 +227,27 @@ function DrawCircles(obj, graphics, radius)
             {
                 var sub = obj.objects[v];
 
-                DrawCircleXY(sub, graphics, radius);
-
-                if(sub.ObjType == ObjectType.Curve)
+                // In Points mode, draw location points (xy)
+                // In Curves mode, draw control points (c, c2)
+                if(editMode == EditModeType.Points)
                 {
-                    DrawCurveXY(sub, graphics, radius);
+                    DrawCircleXY(sub, graphics, radius);
+                }
+                else if(editMode == EditModeType.Curves)
+                {
+                    if(sub.ObjType == ObjectType.Curve)
+                    {
+                        DrawCurveXY(sub, graphics, radius);
+                    }
                 }
             }
         }
         else
         {
-            DrawCircleXY(obj, graphics, radius);
+            if(editMode == EditModeType.Points)
+            {
+                DrawCircleXY(obj, graphics, radius);
+            }
         }
     }
 }

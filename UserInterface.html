@@ -39,7 +39,7 @@
             </button>
             <button
                 data-mode="Edit Mode"
-                title="Edit mode (E). Click and drag points to edit curves."
+                title="Edit mode (E). Press E to toggle between editing Points and Curves. In Curves mode, press E again to select next shape."
                 onclick="
                     currentState = DrawingState.Edit;
                     UpdateCursorForMode();
@@ -326,7 +326,7 @@
                     </div>
                     <div class="hotkey-item">
                         <span class="hotkey-key">E</span
-                        ><span class="hotkey-desc">Edit mode (edit points)</span>
+                        ><span class="hotkey-desc">Edit mode: E toggles Points/Curves, E again selects next shape</span>
                     </div>
                     <div class="hotkey-item">
                         <span class="hotkey-key">Z</span

@@ -9,6 +9,11 @@ const ObjectType = {
     TextureRepeat: "texture"
 }
 
+const EditModeType = {
+    Points: "Points",
+    Curves: "Curves"
+};
+
 class PathShape
 {
     constructor(x= 0, y = 0)
@@ -213,7 +218,7 @@ class PathShape
         return this.objects[this.objects.length - 1];
     }
 
-    GetNearestObject(x, y, maxDist = 100)
+    GetNearestObject(x, y, maxDist = 100, editMode = EditModeType.Points)
     {
         var cdist = maxDist + 100;
         var typ = null;
@@ -222,42 +227,49 @@ class PathShape
 
         for(var v = 0; v < this.objects.length; v++)
         {
-            if(this.objects[v].X)
+            // In Points mode, only look for location points (xy)
+            if(editMode == EditModeType.Points)
             {
-                var dist = MathUtilities.getDistance(this.objects[v].X, this.objects[v].Y, x, y);
-
-                if(dist < cdist)
+                if(this.objects[v].X)
                 {
-                    cdist = dist;
+                    var dist = MathUtilities.getDistance(this.objects[v].X, this.objects[v].Y, x, y);
 
-                    obj = this.objects[v];
-                    typ = PointType.xy;
+                    if(dist < cdist)
+                    {
+                        cdist = dist;
+
+                        obj = this.objects[v];
+                        typ = PointType.xy;
+                    }
                 }
             }
-
-            if(this.objects[v].CX)
+            // In Curves mode, only look for control points (c, c2)
+            else if(editMode == EditModeType.Curves)
             {
-                var dist = MathUtilities.getDistance(this.objects[v].CX, this.objects[v].CY, x, y);
-
-                if(dist < cdist)
+                if(this.objects[v].CX)
                 {
-                    cdist = dist;
+                    var dist = MathUtilities.getDistance(this.objects[v].CX, this.objects[v].CY, x, y);
 
-                    obj = this.objects[v];
-                    typ = PointType.c;
+                    if(dist < cdist)
+                    {
+                        cdist = dist;
+
+                        obj = this.objects[v];
+                        typ = PointType.c;
+                    }
                 }
-            }
 
-            if(this.objects[v].CX2)
-            {
-                var dist = MathUtilities.getDistance(this.objects[v].CX2, this.objects[v].CY2, x, y);
-
-                if(dist < cdist)
+                if(this.objects[v].CX2)
                 {
-                    cdist = dist;
+                    var dist = MathUtilities.getDistance(this.objects[v].CX2, this.objects[v].CY2, x, y);
 
-                    obj = this.objects[v];
-                    typ = PointType.c2;
+                    if(dist < cdist)
+                    {
+                        cdist = dist;
+
+                        obj = this.objects[v];
+                        typ = PointType.c2;
+                    }
                 }
             }
         }
@@ -566,7 +578,7 @@ class TextureRepeat
         this.ObjType = ObjectType.TextureRepeat;
     }
 
-    GetNearestObject()
+    GetNearestObject(x, y, maxDist = 100, editMode = EditModeType.Points)
     {
         return {
             Object: this,
@@ -621,7 +633,7 @@ class ImageDraw
         this.Y = rebox.Y;
     }
 
-    GetNearestObject()
+    GetNearestObject(x, y, maxDist = 100, editMode = EditModeType.Points)
     {
         return {
             Object: this,

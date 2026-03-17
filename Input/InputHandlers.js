@@ -275,7 +275,22 @@ function OnKeyPress(ev)
     {
         if(currentState == DrawingState.Edit)
         {
-            NextShapeIndex();
+            // Toggle between Points and Curves edit mode
+            if(currentEditMode == EditModeType.Points)
+            {
+                currentEditMode = EditModeType.Curves;
+            }
+            else
+            {
+                // Already in Curves mode, so select next shape
+                currentEditMode = EditModeType.Points;
+                NextShapeIndex();
+            }
+        }
+        else
+        {
+            // Entering edit mode, default to Points
+            currentEditMode = EditModeType.Points;
         }
 
         currentState = DrawingState.Edit;
@@ -567,7 +582,7 @@ function ReDraw()
 
     if(currentState == DrawingState.Edit)
     {
-        DrawCircles(Builder.objects[shapeIndex], graphics, 5);
+        DrawCircles(Builder.objects[shapeIndex], graphics, 5, currentEditMode);
     }
     
     if(currentState == DrawingState.Move)
