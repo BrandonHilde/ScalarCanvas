@@ -85,7 +85,6 @@ function ProccessCurve()
         {
             AddNewCurve(MouseX, MouseY, MouseX, MouseY, MouseX, MouseY);
 
-            MoveCount = 0;
             mousePoints = [];
         }
 

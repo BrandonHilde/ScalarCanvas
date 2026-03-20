@@ -58,17 +58,17 @@ class Grid
     {
         var sx = 3;
 
-        for(var x = (this.Size - this.OffsetX); x < 2000; x+= this.Size)
+        for(var x = (this.Size - this.OffsetX); x < this.Width; x+= this.Size)
         {
-            for(var y = (this.Size - this.OffsetY); y < 1200; y+= this.Size)
+            for(var y = (this.Size - this.OffsetY); y < this.Height; y+= this.Size)
             {
-                var lnh = new Line(x, y - sx, x, y + sx,aidColor);
+                var lnh = new Line(x, y - sx, x, y + sx, aidColor);
                 lnh.LineWidth = 1;
                 lnh.Render(graphics);
 
-                var lnh = new Line(x - sx, y, x + sx, y,aidColor);
-                lnh.LineWidth = 1;
-                lnh.Render(graphics);
+                var lnv = new Line(x - sx, y, x + sx, y, aidColor);
+                lnv.LineWidth = 1;
+                lnv.Render(graphics);
             }
         }
     }

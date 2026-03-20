@@ -106,28 +106,24 @@ class PathShape
         var centx = bounds.X + (bounds.Width  / 2);
         var centy = bounds.Y + (bounds.Height / 2);
 
-        console.log(bounds);
-
         var difx = x - centx;
         var dify = y - centy;
 
-        console.log(difx + " " + dify);
-
         for(var v = 0; v < this.objects.length; v++)
         {
-            if(this.objects[v].X)
+            if(this.objects[v].X !== undefined)
             {
                 this.objects[v].X += difx;
                 this.objects[v].Y += dify;
             }
 
-            if(this.objects[v].CX)
+            if(this.objects[v].CX !== undefined)
             {
                 this.objects[v].CX += difx;
                 this.objects[v].CY += dify;
             }
 
-            if(this.objects[v].CX2)
+            if(this.objects[v].CX2 !== undefined)
             {
                 this.objects[v].CX2 += difx;
                 this.objects[v].CY2 += dify;
@@ -142,19 +138,19 @@ class PathShape
 
         for(var v = 0; v < this.objects.length; v++)
         {
-            if(this.objects[v].X)
+            if(this.objects[v].X !== undefined)
             {
                 this.objects[v].X += difx;
                 this.objects[v].Y += dify;
             }
 
-            if(this.objects[v].CX)
+            if(this.objects[v].CX !== undefined)
             {
                 this.objects[v].CX += difx;
                 this.objects[v].CY += dify;
             }
 
-            if(this.objects[v].CX2)
+            if(this.objects[v].CX2 !== undefined)
             {
                 this.objects[v].CX2 += difx;
                 this.objects[v].CY2 += dify;
@@ -168,7 +164,7 @@ class PathShape
 
         for(var v = 0; v < this.objects.length; v++)
         {
-            if(this.objects[v].X)
+            if(this.objects[v].X !== undefined)
             {
                 var px = rebox.PointMap(
                     this.objects[v].X, 
@@ -179,7 +175,7 @@ class PathShape
                 this.objects[v].Y = px.Y;
             }
 
-            if(this.objects[v].CX)
+            if(this.objects[v].CX !== undefined)
             {
                 var px = rebox.PointMap(
                     this.objects[v].CX, 
@@ -190,7 +186,7 @@ class PathShape
                 this.objects[v].CY = px.Y;
             }
 
-            if(this.objects[v].CX2)
+            if(this.objects[v].CX2 !== undefined)
             {
                 var px = rebox.PointMap(
                     this.objects[v].CX2, 
@@ -230,7 +226,7 @@ class PathShape
             // In Points mode, only look for location points (xy)
             if(editMode == EditModeType.Points)
             {
-                if(this.objects[v].X)
+                if(this.objects[v].X !== undefined)
                 {
                     var dist = MathUtilities.getDistance(this.objects[v].X, this.objects[v].Y, x, y);
 
@@ -246,7 +242,7 @@ class PathShape
             // In Curves mode, only look for control points (c, c2)
             else if(editMode == EditModeType.Curves)
             {
-                if(this.objects[v].CX)
+                if(this.objects[v].CX !== undefined)
                 {
                     var dist = MathUtilities.getDistance(this.objects[v].CX, this.objects[v].CY, x, y);
 
@@ -259,7 +255,7 @@ class PathShape
                     }
                 }
 
-                if(this.objects[v].CX2)
+                if(this.objects[v].CX2 !== undefined)
                 {
                     var dist = MathUtilities.getDistance(this.objects[v].CX2, this.objects[v].CY2, x, y);
 
@@ -296,19 +292,34 @@ class PathShape
 
     Render(canvas)
     {
+        // First pass: render the whole path normally
         canvas.beginPath();
-        
         for(var v = 0; v < this.objects.length; v++)
         {
             this.objects[v].Render(canvas);
         }
-
         canvas.strokeStyle = this.Style;
         canvas.fillStyle = this.Fill;
         canvas.lineWidth = this.LineWidth;
-
         canvas.fill();
         canvas.stroke();
+
+        // Second pass: highlight any flagged segments individually
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            var sub = this.objects[v];
+            if(sub.Highlight && sub.ObjType === ObjectType.Curve && v > 0)
+            {
+                var prev = this.objects[v - 1];
+                canvas.beginPath();
+                canvas.moveTo(prev.X, prev.Y);
+                sub.Build(canvas);
+                canvas.strokeStyle = sub.HighlightStyle;
+                canvas.lineWidth = this.LineWidth + 3;
+                canvas.stroke();
+                sub.Highlight = false;
+            }
+        }
 
         canvas.beginPath();
     }
@@ -434,16 +445,6 @@ class CurveTo
     Render(canvas)
     {
         this.Build(canvas);
-
-        if(this.Highlight)
-        {
-            console.log("highlighting");
-            canvas.strokeStyle = this.HighlightStyle;
-            canvas.lineWidth = this.LineWidth + 3;
-        }
-
-        canvas.stroke();
-        canvas.fill();
     }
 
     GetSvgData()
@@ -558,7 +559,6 @@ class Line
         this.Build(canvas);
         
         canvas.stroke();
-        canvas.fill();
     }
 }
 
@@ -604,7 +604,6 @@ class ImageDraw
     constructor(data, x, y, width)
     {
         this.Data = data;
-        console.log(data);
         this.X = x;
         this.Y = y;
         this.Width = width;

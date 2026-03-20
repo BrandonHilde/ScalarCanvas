@@ -1,7 +1,3 @@
-var MirrorObjs = [];
-
-var startID = 10000;
-
 const MirrorType = {
     Vertical: 0,
     Horizontal: 1,
@@ -13,7 +9,6 @@ class MirrorObj{
     constructor(type, x, y)
     {
         this.mType = type;
-        this.ID = startID++;
         this.Shape = null;
         this.MirrorX = x;
         this.MirrorY = y;

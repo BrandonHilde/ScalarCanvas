@@ -8,26 +8,27 @@ class CanvasBuilder
     
     GetBoundingBox()
     {
-        var bounds = new BoundingBox(-1,-1,-1,-1);
+        var minX = null, minY = null, maxX = null, maxY = null;
 
         for(var v = 0; v < this.objects.length; v++)
         {
-            var objB = this.objects[v].GetBoundingBox();
+            var obj = this.objects[v];
+            if(!obj || !obj.GetBoundingBox) continue;
 
-            if(bounds.X < 0) bounds.X = objB.X;
-            else if(bounds.X > objB.X) bounds.X = objB.X;
+            var objB = obj.GetBoundingBox();
 
-            if(bounds.Y < 0) bounds.Y = objB.Y;
-            else if(bounds.Y > objB.Y) bounds.Y = objB.Y;
+            var objMaxX = objB.X + objB.Width;
+            var objMaxY = objB.Y + objB.Height;
 
-            if(bounds.Width < 0) bounds.Width = objB.Width;
-            else if(bounds.Width < objB.Width) bounds.Width = objB.Width;
-
-            if(bounds.Height < 0) bounds.Height = objB.Height;
-            else if(bounds.Height < objB.Height) bounds.Height = objB.Height;
+            if(minX === null || objB.X < minX) minX = objB.X;
+            if(minY === null || objB.Y < minY) minY = objB.Y;
+            if(maxX === null || objMaxX > maxX) maxX = objMaxX;
+            if(maxY === null || objMaxY > maxY) maxY = objMaxY;
         }
 
-        return bounds;
+        if(minX === null) return new BoundingBox(0, 0, 0, 0);
+
+        return new BoundingBox(minX, minY, maxX - minX, maxY - minY);
     }
 
     RemoveObject(index)

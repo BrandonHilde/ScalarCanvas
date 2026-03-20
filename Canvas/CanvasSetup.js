@@ -34,11 +34,6 @@ function ClearCanvas(CanvasObject, canvasContext)
     canvasContext.fill();
 }
 
-// Replaced by HTML toolbar
-function DrawUserHotkeys(graphics)
-{
-}
-
 function UpdateToolbar()
 {
     var buttons = document.querySelectorAll('#toolbar button[data-mode]');
