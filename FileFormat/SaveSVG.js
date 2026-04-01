@@ -59,6 +59,7 @@ function handleFiles(files) {
             reader.onload = function(e) {
                 var img = new ImageDraw(e.target.result, MouseX,MouseY,512,512);
                 Builder.AddObject(img);
+                shapeIndex = Builder.objects.length - 1;
             }
             
             reader.readAsDataURL(file);

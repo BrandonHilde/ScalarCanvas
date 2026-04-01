@@ -385,7 +385,90 @@ function MoveShape(obj, dx, dy)
 
 function ResizeShape(obj, handle, startBounds, currentX, currentY, originalPoints)
 {
-    if(obj == null || obj.objects == null || startBounds == null || originalPoints == null) return;
+    if(obj == null || startBounds == null) return;
+    
+    if(obj.ObjType == ObjectType.Image)
+    {
+        var padding = 8;
+        var startMinX = startBounds.X;
+        var startMinY = startBounds.Y;
+        var startMaxX = startBounds.X + startBounds.Width;
+        var startMaxY = startBounds.Y + startBounds.Height;
+        var startW = startBounds.Width;
+        var startH = startBounds.Height;
+        var aspectRatio = startW / startH;
+        
+        var newMinX = startMinX;
+        var newMinY = startMinY;
+        var newMaxX = startMaxX;
+        var newMaxY = startMaxY;
+        
+        switch(handle)
+        {
+            case 'nw':
+                newMinX = currentX + padding;
+                newMinY = currentY + padding;
+                break;
+            case 'n':
+                newMinY = currentY + padding;
+                break;
+            case 'ne':
+                {
+                    var rawNewMaxX = currentX - padding;
+                    var rawNewMinY = currentY + padding;
+                    var rawNewW = rawNewMaxX - startMinX;
+                    var rawNewH = startMaxY - rawNewMinY;
+                    
+                    if(rawNewW / rawNewH > aspectRatio)
+                    {
+                        newMinY = startMaxY - rawNewW / aspectRatio;
+                        newMaxX = rawNewMaxX;
+                    }
+                    else
+                    {
+                        newMaxX = startMinX + rawNewH * aspectRatio;
+                        newMinY = rawNewMinY;
+                    }
+                }
+                break;
+            case 'e':
+                newMaxX = currentX - padding;
+                break;
+            case 'se':
+                newMaxX = currentX - padding;
+                newMaxY = currentY - padding;
+                break;
+            case 's':
+                newMaxY = currentY - padding;
+                break;
+            case 'sw':
+                newMinX = currentX + padding;
+                newMaxY = currentY - padding;
+                break;
+            case 'w':
+                newMinX = currentX + padding;
+                break;
+        }
+        
+        var finalMinX = Math.min(newMinX, newMaxX);
+        var finalMaxX = Math.max(newMinX, newMaxX);
+        var finalMinY = Math.min(newMinY, newMaxY);
+        var finalMaxY = Math.max(newMinY, newMaxY);
+        
+        if(finalMaxX - finalMinX < 10) finalMaxX = finalMinX + 10;
+        if(finalMaxY - finalMinY < 10) finalMaxY = finalMinY + 10;
+        
+        var newW = finalMaxX - finalMinX;
+        var newH = finalMaxY - finalMinY;
+        
+        obj.X = finalMinX;
+        obj.Y = finalMinY;
+        obj.Width = newW;
+        obj.Height = newH;
+        return;
+    }
+    
+    if(obj.objects == null || originalPoints == null) return;
     
     var padding = 8;
     // The handles are drawn with padding, so we need to account for that
@@ -396,6 +479,7 @@ function ResizeShape(obj, handle, startBounds, currentX, currentY, originalPoint
     var startMaxY = startBounds.Y + startBounds.Height;
     var startW = startBounds.Width;
     var startH = startBounds.Height;
+    var aspectRatio = startW / startH;
     
     // Calculate new bounds based on handle
     // The mouse is at the handle position (which includes padding)
@@ -415,8 +499,23 @@ function ResizeShape(obj, handle, startBounds, currentX, currentY, originalPoint
             newMinY = currentY + padding;
             break;
         case 'ne':
-            newMaxX = currentX - padding;
-            newMinY = currentY + padding;
+            {
+                var rawNewMaxX = currentX - padding;
+                var rawNewMinY = currentY + padding;
+                var rawNewW = rawNewMaxX - startMinX;
+                var rawNewH = startMaxY - rawNewMinY;
+                
+                if(rawNewW / rawNewH > aspectRatio)
+                {
+                    newMinY = startMaxY - rawNewW / aspectRatio;
+                    newMaxX = rawNewMaxX;
+                }
+                else
+                {
+                    newMaxX = startMinX + rawNewH * aspectRatio;
+                    newMinY = rawNewMinY;
+                }
+            }
             break;
         case 'e':
             newMaxX = currentX - padding;

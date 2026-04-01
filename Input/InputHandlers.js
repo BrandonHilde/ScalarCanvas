@@ -701,7 +701,7 @@ function UpdateCursorForMode()
             else if(handle === 'nw' || handle === 'se')
                 canvasObj.style.cursor = 'nwse-resize';
             else if(handle === 'ne' || handle === 'sw')
-                canvasObj.style.cursor = 'nesw-resize';
+                canvasObj.style.cursor = 'nwse-resize';
             else if(handle === 'n' || handle === 's')
                 canvasObj.style.cursor = 'ns-resize';
             else if(handle === 'e' || handle === 'w')
