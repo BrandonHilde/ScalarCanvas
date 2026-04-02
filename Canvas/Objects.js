@@ -626,10 +626,13 @@ class ImageDraw
     {
         var rebox = bounds.GetResizeBox(w, h);
 
-        this.Width = rebox.Width;
-        this.Height = rebox.Height;
-        this.X = rebox.X;
-        this.Y = rebox.Y;
+        var topLeft = rebox.PointMap(this.X, this.Y, bounds);
+        var bottomRight = rebox.PointMap(this.X + this.Width, this.Y + this.Height, bounds);
+
+        this.X = topLeft.X;
+        this.Y = topLeft.Y;
+        this.Width = bottomRight.X - topLeft.X;
+        this.Height = bottomRight.Y - topLeft.Y;
     }
 
     GetNearestObject(x, y, maxDist = 100, editMode = EditModeType.Points)
@@ -648,6 +651,12 @@ class ImageDraw
 
             this.Height = ratio * this.Width;
         }
+    }
+
+    MoveShapeBy(x, y)
+    {
+        this.X += x;
+        this.Y += y;
     }
 
     Render(canvas)

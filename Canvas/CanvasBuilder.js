@@ -93,10 +93,16 @@ class CanvasBuilder
 
     RenderAll(canvas)
     {
-        // MARK: CHANGE HHOW RENDERALL WORKS
         for(var v = 0; v < this.objects.length; v++)
         {
-            if(this.objects[v] != null)
+            if(this.objects[v] != null && this.objects[v].ObjType == ObjectType.Image)
+            {
+                this.objects[v].Render(canvas);
+            }
+        }
+        for(var v = 0; v < this.objects.length; v++)
+        {
+            if(this.objects[v] != null && this.objects[v].ObjType != ObjectType.Image)
             {
                 this.objects[v].Render(canvas);
             }
