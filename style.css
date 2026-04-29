@@ -90,99 +90,211 @@ body{
     color: #64ffda;
 }
 
-/* ── Settings Panel ────────────────────────────────── */
-h4{
-    color: aliceblue;
-    margin: 8px 0 4px 0;
-    font-size: 13px;
+/* ── Settings Modal ────────────────────────────────── */
+#menu {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
 }
 
-.ColorPick{
+#menu.open {
+    display: flex;
+}
+
+.modal-backdrop {
     position: absolute;
-    left: 100px;
-    top: 0px;
-    padding: 20px;
-    background-color: #1e2841;
-    border-radius: 12px;
+    inset: 0;
+    background: rgba(10, 12, 22, 0.7);
+    backdrop-filter: blur(4px);
 }
 
-.color-row {
+.modal-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 720px;
+    max-width: 90vw;
+    max-height: 85vh;
+    background: #1a1d2e;
+    border: 1px solid #2a2d3e;
+    border-radius: 10px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    overflow: hidden;
+}
+
+.modal-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin: 6px 0;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #2a2d3e;
+    background: #161929;
+    flex-shrink: 0;
 }
 
-.color-row label {
+.modal-header h3 {
+    margin: 0;
+    color: #ccd6f6;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #8892b0;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color 0.15s;
+}
+
+.modal-close:hover {
+    color: #ccd6f6;
+}
+
+.modal-body {
+    display: flex;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+}
+
+.settings-section {
+    flex: 1 1 0;
+    padding: 14px 18px;
+    overflow-y: auto;
+    border-right: 1px solid #2a2d3e;
+}
+
+.shapes-section {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.shapes-section h4,
+.settings-group h4 {
+    margin: 0 0 10px 0;
+    color: #ccd6f6;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.shapes-section h4 {
+    padding: 14px 14px 0 14px;
+    flex-shrink: 0;
+}
+
+#shapelist {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 14px 14px 14px;
+}
+
+.settings-group {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #25283c;
+}
+
+.settings-group:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+}
+
+.form-row label {
     color: #8892b0;
     font-size: 12px;
-    width: 70px;
+    width: 60px;
 }
 
-#foreColor{
-    width: 40px;
-    height: 30px;
+input[type="color"] {
+    width: 32px;
+    height: 28px;
     border: 1px solid #3a3d4e;
     border-radius: 4px;
     cursor: pointer;
     padding: 1px;
+    background: transparent;
 }
 
-#backColor{
-    width: 40px;
-    height: 30px;
-    border: 1px solid #3a3d4e;
-    border-radius: 4px;
-    cursor: pointer;
-    padding: 1px;
+.slider-group {
+    margin: 12px 0;
 }
 
-.slider-row {
+.slider-label {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    margin-bottom: 6px;
+    color: #8892b0;
+    font-size: 11px;
 }
 
-.slider-row input[type="range"] {
-    flex: 1;
-}
-
-.slider-val {
+.val-badge {
     color: #64ffda;
-    font-size: 12px;
     font-family: monospace;
-    min-width: 28px;
-    text-align: right;
+    font-size: 11px;
+    background: #102a24;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #25283c;
+    border-radius: 3px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #64ffda;
+    cursor: pointer;
+    border: 2px solid #1a1d2e;
+    box-shadow: 0 0 0 1px #3a6a5e;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #64ffda;
+    cursor: pointer;
+    border: 2px solid #1a1d2e;
+    box-shadow: 0 0 0 1px #3a6a5e;
 }
 
 /* ── Hotkeys List ──────────────────────────────────── */
 .hotkeys-list {
-    max-height: 280px;
-    overflow-y: auto;
     font-size: 11px;
-    margin-top: 8px;
-    padding-right: 4px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 4px 12px;
-}
-
-.hotkeys-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.hotkeys-list::-webkit-scrollbar-track {
-    background: #1a1d2e;
-    border-radius: 3px;
-}
-
-.hotkeys-list::-webkit-scrollbar-thumb {
-    background: #3a3d4e;
-    border-radius: 3px;
-}
-
-.hotkeys-list::-webkit-scrollbar-thumb:hover {
-    background: #4a4d5e;
+    gap: 6px 12px;
 }
 
 .hotkey-item {
@@ -212,27 +324,39 @@ h4{
     margin-left: 6px;
 }
 
-#menu{
-    display: block;
-    width: 800px;
-    position: absolute;
-    height: 1000px;
-    left: 0;
-    top: 100px;
+/* ── Scrollbars ────────────────────────────────────── */
+.settings-section::-webkit-scrollbar,
+#shapelist::-webkit-scrollbar {
+    width: 6px;
 }
 
-.objSelect
-{
+.settings-section::-webkit-scrollbar-track,
+#shapelist::-webkit-scrollbar-track {
+    background: #1a1d2e;
+    border-radius: 3px;
+}
+
+.settings-section::-webkit-scrollbar-thumb,
+#shapelist::-webkit-scrollbar-thumb {
+    background: #3a3d4e;
+    border-radius: 3px;
+}
+
+.settings-section::-webkit-scrollbar-thumb:hover,
+#shapelist::-webkit-scrollbar-thumb:hover {
+    background: #4a4d5e;
+}
+
+/* ── Shape List Items ──────────────────────────────── */
+.objSelect {
     color: greenyellow;
 }
 
-.objNotSelect
-{
+.objNotSelect {
     color: wheat;
 }
 
-.objShape
-{
+.objShape {
     border-bottom: 1px dashed wheat;
     cursor: pointer;
     margin: 8px;
@@ -240,7 +364,7 @@ h4{
 
 .highlight {
     color: wheat;
-    cursor:pointer;
+    cursor: pointer;
 }
 
 .highlight:hover {

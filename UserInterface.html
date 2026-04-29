@@ -178,19 +178,19 @@
 
             function openSettings() {
                 var clr = document.getElementById("menu");
-
-                if (clr.style.display === "block") {
-                    clr.style.display = "none";
+                if (clr.classList.contains("open")) {
+                    closeSettings();
                 } else {
                     var forePick = document.getElementById("foreColor");
                     var backPick = document.getElementById("backColor");
-
                     forePick.value = foreColor;
                     backPick.value = backColor;
-
-                    clr.style.display = "block";
+                    clr.classList.add("open");
                     UpdateMenu();
                 }
+            }
+            function closeSettings() {
+                document.getElementById("menu").classList.remove("open");
             }
 
             /// END OF TOOLBAR HELPERS
@@ -204,6 +204,9 @@
                 if ((e.ctrlKey || e.metaKey) && e.key === "z") {
                     e.preventDefault();
                     Undo();
+                }
+                if (e.key === "Escape") {
+                    closeSettings();
                 }
             });
 
@@ -242,142 +245,79 @@
             UpdateCursorForMode();
         </script>
 
-        <div id="menu" style="display: none">
-            <svg
-                id="menuHide"
-                style="float: right; cursor: pointer"
-                width="20"
-                height="20"
-            >
-                <g>
-                    <path
-                        d="M3 3L 17 17M17 3L3 17"
-                        style="
-                            fill: none;
-                            stroke: rgb(255, 255, 255);
-                            stroke-width: 3;
-                        "
-                    />
-                </g>
-            </svg>
+        <div id="menu">
+            <div class="modal-backdrop" onclick="closeSettings()"></div>
+            <div class="modal-panel">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button class="modal-close" title="Close (Esc)" onclick="closeSettings()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <div class="settings-group">
+                            <h4>Appearance</h4>
+                            <div class="form-row">
+                                <label>Stroke</label>
+                                <input type="color" id="foreColor" value="#ff0000" />
+                            </div>
+                            <div class="form-row">
+                                <label>Fill</label>
+                                <input type="color" id="backColor" value="#ff0000" />
+                            </div>
+                        </div>
 
-            <div id="clrPicker" class="ColorPick">
-                <br />
-                <hr />
+                        <div class="settings-group">
+                            <h4>Parameters</h4>
+                            <div class="slider-group">
+                                <div class="slider-label">
+                                    <span>Line Width</span>
+                                    <span class="val-badge" id="lineWidthVal">3</span>
+                                </div>
+                                <input type="range" id="lineWidth" min="1" max="20" value="3" />
+                            </div>
+                            <div class="slider-group">
+                                <div class="slider-label">
+                                    <span>Grid Size</span>
+                                    <span class="val-badge" id="gridSizeVal">100</span>
+                                </div>
+                                <input type="range" id="gridSize" min="10" max="250" value="100" />
+                            </div>
+                            <div class="slider-group">
+                                <div class="slider-label">
+                                    <span>Segment Frequency</span>
+                                    <span class="val-badge" id="segFreqVal">70</span>
+                                </div>
+                                <input type="range" id="segFrequency" min="40" max="250" value="70" />
+                            </div>
+                        </div>
 
-                <div class="color-row">
-                    <label>Stroke</label>
-                    <input type="color" id="foreColor" value="#ff0000" />
-                </div>
-                <div class="color-row">
-                    <label>Fill</label>
-                    <input type="color" id="backColor" value="#ff0000" />
-                </div>
-                <hr />
-                <h4>Line Width</h4>
-                <div class="slider-row">
-                    <input
-                        type="range"
-                        id="lineWidth"
-                        min="1"
-                        max="20"
-                        value="3"
-                    />
-                    <span class="slider-val" id="lineWidthVal">3</span>
-                </div>
-                <h4>Grid Size</h4>
-                <div class="slider-row">
-                    <input
-                        type="range"
-                        id="gridSize"
-                        min="10"
-                        max="250"
-                        value="100"
-                    />
-                    <span class="slider-val" id="gridSizeVal">100</span>
-                </div>
-                <h4>Segment Frequency</h4>
-                <div class="slider-row">
-                    <input
-                        type="range"
-                        id="segFrequency"
-                        min="40"
-                        max="250"
-                        value="70"
-                    />
-                    <span class="slider-val" id="segFreqVal">70</span>
-                </div>
+                        <div class="settings-group">
+                            <h4>Keyboard Shortcuts</h4>
+                            <div class="hotkeys-list">
+                                <div class="hotkey-item"><span class="hotkey-key">Tab</span><span class="hotkey-desc">Toggle drawing mode</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">D</span><span class="hotkey-desc">Draw curve mode</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">A</span><span class="hotkey-desc">Add curve (click start to close)</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">E</span><span class="hotkey-desc">Edit mode: E toggles Points/Curves, E again selects next shape</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">Z</span><span class="hotkey-desc">Move/Resize mode (drag box)</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">R</span><span class="hotkey-desc">Resize/move canvas</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">M</span><span class="hotkey-desc">Cycle mirror mode</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">G</span><span class="hotkey-desc">Toggle grid</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">S</span><span class="hotkey-desc">Save SVG</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">F</span><span class="hotkey-desc">Open settings</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">N</span><span class="hotkey-desc">Select next shape</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">X</span><span class="hotkey-desc">Delete</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">H</span><span class="hotkey-desc">Hide cursor</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">C</span><span class="hotkey-desc">Copy shape</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">Ctrl+Z</span><span class="hotkey-desc">Undo</span></div>
+                            </div>
+                        </div>
+                    </div>
 
-                <hr />
-                <h4>Keyboard Shortcuts</h4>
-                <div class="hotkeys-list">
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">Tab</span
-                        ><span class="hotkey-desc">Toggle drawing mode</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">D</span
-                        ><span class="hotkey-desc">Draw curve mode</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">A</span
-                        ><span class="hotkey-desc">Add curve (click start to close)</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">E</span
-                        ><span class="hotkey-desc">Edit mode: E toggles Points/Curves, E again selects next shape</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">Z</span
-                        ><span class="hotkey-desc">Move/Resize mode (drag box)</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">R</span
-                        ><span class="hotkey-desc">Resize/move canvas</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">M</span
-                        ><span class="hotkey-desc">Cycle mirror mode</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">G</span
-                        ><span class="hotkey-desc">Toggle grid</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">S</span
-                        ><span class="hotkey-desc">Save SVG</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">F</span
-                        ><span class="hotkey-desc">Open settings</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">N</span
-                        ><span class="hotkey-desc">Select next shape</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">X</span
-                        ><span class="hotkey-desc">Delete</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">H</span
-                        ><span class="hotkey-desc">Hide cursor</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">C</span
-                        ><span class="hotkey-desc">Copy shape</span>
-                    </div>
-                    <div class="hotkey-item">
-                        <span class="hotkey-key">Ctrl+Z</span
-                        ><span class="hotkey-desc">Undo</span>
+                    <div class="shapes-section">
+                        <h4>Shapes</h4>
+                        <div id="shapelist"></div>
                     </div>
                 </div>
-            </div>
-
-            <div id="listmenu" style="left: 500px" class="ColorPick">
-                <br />
-                <hr />
-                <div id="shapelist" style="width: 200px; height: auto"></div>
             </div>
         </div>
 
@@ -416,14 +356,6 @@
 
             backPick.addEventListener("change", () => {
                 backColor = backPick.value;
-            });
-
-            const hide = document.getElementById("menuHide");
-
-            hide.addEventListener("click", () => {
-                var clr = document.getElementById("menu");
-
-                clr.style.display = "none";
             });
         </script>
     </body>
