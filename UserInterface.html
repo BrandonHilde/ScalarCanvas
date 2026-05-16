@@ -10,6 +10,7 @@
         <script src="Input/InputHandlers.js"></script>
         <script src="Input/ShapeInput.js"></script>
         <script src="FileFormat/SaveSVG.js"></script>
+        <script src="FileFormat/Font.js"></script>
 
         <link rel="stylesheet" href="style.css" />
     </head>
@@ -66,6 +67,16 @@
                 "
             >
                 Resize
+            </button>
+            <button
+                data-mode="Font Mode"
+                title="Font mode (T). Drag a .ttf file onto the canvas."
+                onclick="
+                    currentState = DrawingState.Font;
+                    UpdateCursorForMode();
+                "
+            >
+                Font
             </button>
 
             <div class="separator"></div>
@@ -138,6 +149,7 @@
                 ResizeMove: "Resize and Move Canvas",
                 Edit: "Edit Mode",
                 Move: "Move Shape",
+                Font: "Font Mode",
             };
 
             const HotKeys = {
@@ -155,6 +167,7 @@
                 HideCursor: "h",
                 MoveShape: "z",
                 CopyShape: "c",
+                FontMode: "t",
             };
 
             var currentState = DrawingState.DrawCurve;
@@ -193,6 +206,85 @@
                 document.getElementById("menu").classList.remove("open");
             }
 
+            function openFontPanel() {
+                if (!loadedFontParser) return;
+                var panel = document.getElementById("font-panel");
+                document.getElementById("font-panel-title").textContent = loadedFontName;
+                panel.classList.add("open");
+                renderFontGlyphs();
+            }
+
+            function closeFontPanel() {
+                document.getElementById("font-panel").classList.remove("open");
+            }
+
+            function renderFontGlyphs() {
+                if (!loadedFontParser) return;
+                var parser = loadedFontParser;
+                var container = document.getElementById("font-glyphs");
+                container.innerHTML = '';
+
+                var chars = [];
+                for (var i = 32; i < 127; i++) {
+                    var ch = String.fromCharCode(i);
+                    var idx = parser.charToGlyphIndex(ch);
+                    if (idx !== undefined && idx !== 0) {
+                        var g = parser.getGlyph(idx);
+                        if (g) chars.push({ char: ch, path: g.path, xMin: g.xMin, yMin: g.yMin, xMax: g.xMax, yMax: g.yMax });
+                    }
+                }
+
+                document.getElementById("font-panel-count").textContent = chars.length + ' glyphs';
+
+                var pad = Math.max(10, parser.unitsPerEm * 0.04);
+
+                for (var n = 0; n < chars.length; n++) {
+                    var c = chars[n];
+                    var w = (c.xMax - c.xMin) + pad * 2;
+                    var h = (c.yMax - c.yMin) + pad * 2;
+
+                    var card = document.createElement('div');
+                    card.className = 'font-glyph-card';
+                    card.title = 'U+' + c.char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0');
+
+                    var svgNS = "http://www.w3.org/2000/svg";
+                    var svg = document.createElementNS(svgNS, "svg");
+                    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+                    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+                    var gEl = document.createElementNS(svgNS, "g");
+                    var transX = pad - c.xMin;
+                    var transY = pad;
+                    gEl.setAttribute("transform", "translate(" + transX + ", " + transY + ") scale(1, -1) translate(0, -" + c.yMax + ")");
+
+                    var pathEl = document.createElementNS(svgNS, "path");
+                    pathEl.setAttribute("d", c.path);
+                    gEl.appendChild(pathEl);
+                    svg.appendChild(gEl);
+                    card.appendChild(svg);
+
+                    var label = document.createElement('span');
+                    label.className = 'font-glyph-label';
+                    label.textContent = c.char === ' ' ? 'space' : c.char;
+                    card.appendChild(label);
+
+                    card.addEventListener('click', (function(ch) {
+                        return function() { addGlyphToCanvas(ch); };
+                    })(c.char));
+
+                    container.appendChild(card);
+                }
+            }
+
+            function addGlyphToCanvas(char) {
+                if (!loadedFontParser) return;
+                var glyphObj = new FontShape(loadedFontParser, char, MouseX, MouseY, 48);
+                Builder.AddObject(glyphObj);
+                shapeIndex = Builder.objects.length - 1;
+                ClearCanvas(canvasObj, graphics);
+                ReDraw();
+            }
+
             /// END OF TOOLBAR HELPERS
 
             /// USER INPUT
@@ -207,6 +299,7 @@
                 }
                 if (e.key === "Escape") {
                     closeSettings();
+                    closeFontPanel();
                 }
             });
 
@@ -300,6 +393,7 @@
                                 <div class="hotkey-item"><span class="hotkey-key">E</span><span class="hotkey-desc">Edit mode: E toggles Points/Curves, E again selects next shape</span></div>
                                 <div class="hotkey-item"><span class="hotkey-key">Z</span><span class="hotkey-desc">Move/Resize mode (drag box)</span></div>
                                 <div class="hotkey-item"><span class="hotkey-key">R</span><span class="hotkey-desc">Resize/move canvas</span></div>
+                                <div class="hotkey-item"><span class="hotkey-key">T</span><span class="hotkey-desc">Font mode (drag .ttf onto canvas)</span></div>
                                 <div class="hotkey-item"><span class="hotkey-key">M</span><span class="hotkey-desc">Cycle mirror mode</span></div>
                                 <div class="hotkey-item"><span class="hotkey-key">G</span><span class="hotkey-desc">Toggle grid</span></div>
                                 <div class="hotkey-item"><span class="hotkey-key">S</span><span class="hotkey-desc">Save SVG</span></div>
@@ -317,6 +411,23 @@
                         <h4>Shapes</h4>
                         <div id="shapelist"></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="font-panel">
+            <div class="modal-backdrop" onclick="closeFontPanel()"></div>
+            <div class="font-panel-panel">
+                <div class="font-panel-header">
+                    <h3 id="font-panel-title">Font</h3>
+                    <button class="modal-close" title="Close (Esc)" onclick="closeFontPanel()">&times;</button>
+                </div>
+                <div class="font-panel-body">
+                    <div class="font-panel-info">
+                        <span>Click a glyph to add it to the canvas</span>
+                        <span id="font-panel-count"></span>
+                    </div>
+                    <div id="font-glyphs"></div>
                 </div>
             </div>
         </div>

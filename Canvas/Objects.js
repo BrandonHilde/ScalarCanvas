@@ -6,7 +6,9 @@ const ObjectType = {
     Move: "move",
     Rectangle: "rect",
     Image: "image",
-    TextureRepeat: "texture"
+    TextureRepeat: "texture",
+    Font: "font",
+    ClosePath: "close"
 }
 
 const EditModeType = {
@@ -562,6 +564,29 @@ class Line
     }
 }
 
+class ClosePath
+{
+    constructor()
+    {
+        this.ObjType = ObjectType.ClosePath;
+    }
+
+    Build(canvas)
+    {
+        canvas.closePath();
+    }
+
+    Render(canvas)
+    {
+        this.Build(canvas);
+    }
+
+    GetBoundingBox()
+    {
+        return null;
+    }
+}
+
 class TextureRepeat
 {
     constructor(data, x, y, width, height)
@@ -664,5 +689,332 @@ class ImageDraw
         //canvas.globalAlpha = 0.2;
         canvas.drawImage(this.Image, this.X, this.Y, this.Width, this.Height);
         //canvas.globalAlpha = 1;
+    }
+}
+
+function parseSvgPath(pathStr, scale, offsetX, offsetY)
+{
+    var objects = [];
+    var re = /([MLQZ])\s*([-\d.e+]+)?(?:\s+([-\d.e+]+))?(?:\s+([-\d.e+]+))?(?:\s+([-\d.e+]+))?(?:\s+([-\d.e+]+))?(?:\s+([-\d.e+]+))?/gi;
+    var match;
+    var curX = 0, curY = 0;
+    var startX = 0, startY = 0;
+
+    while ((match = re.exec(pathStr)) !== null)
+    {
+        var cmd = match[1];
+        var p = [];
+        for (var i = 2; i <= 7; i++)
+        {
+            if (match[i] !== undefined) p.push(parseFloat(match[i]));
+        }
+
+        switch (cmd)
+        {
+            case 'M':
+                var mox = p[0] * scale + offsetX;
+                var moy = -p[1] * scale + offsetY;
+                objects.push(new MoveTo(mox, moy));
+                curX = mox; curY = moy;
+                startX = mox; startY = moy;
+                break;
+
+            case 'L':
+                var lex = p[0] * scale + offsetX;
+                var ley = -p[1] * scale + offsetY;
+                var lmidx = (curX + lex) / 2;
+                var lmidy = (curY + ley) / 2;
+                objects.push(new CurveTo(lex, ley, lmidx, lmidy, lmidx, lmidy));
+                curX = lex; curY = ley;
+                break;
+
+            case 'Q':
+                var qcx = p[0] * scale + offsetX;
+                var qcy = -p[1] * scale + offsetY;
+                var qex = p[2] * scale + offsetX;
+                var qey = -p[3] * scale + offsetY;
+                var qcx1 = curX + 2/3 * (qcx - curX);
+                var qcy1 = curY + 2/3 * (qcy - curY);
+                var qcx2 = qex + 2/3 * (qcx - qex);
+                var qcy2 = qey + 2/3 * (qcy - qey);
+                objects.push(new CurveTo(qex, qey, qcx1, qcy1, qcx2, qcy2));
+                curX = qex; curY = qey;
+                break;
+
+            case 'Z':
+                objects.push(new ClosePath());
+                curX = startX; curY = startY;
+                break;
+        }
+    }
+    return objects;
+}
+
+class FontShape
+{
+    constructor(parser, char, posX, posY, fontSize)
+    {
+        this.objects = [];
+        this.Char = char || '';
+        this.ObjType = ObjectType.Font;
+        this.Style = foreColor;
+        this.Fill = foreColor;
+        this.LineWidth = 0;
+
+        if (parser && char)
+        {
+            var idx = parser.charToGlyphIndex(char);
+            if (idx !== undefined && idx !== 0)
+            {
+                var g = parser.getGlyph(idx);
+                if (g && g.path)
+                {
+                    var scale = fontSize / parser.unitsPerEm;
+                    this.objects = parseSvgPath(g.path, scale, posX, posY + fontSize);
+                }
+            }
+        }
+    }
+
+    GetBoundingBox()
+    {
+        var bounds = new BoundingBox(-1, -1, -1, -1);
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (!this.objects[v].GetBoundingBox) continue;
+            var objB = this.objects[v].GetBoundingBox();
+            if (!objB) continue;
+
+            if (bounds.X < 0) bounds.X = objB.X;
+            else if (bounds.X > objB.X) bounds.X = objB.X;
+
+            if (bounds.Y < 0) bounds.Y = objB.Y;
+            else if (bounds.Y > objB.Y) bounds.Y = objB.Y;
+        }
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (!this.objects[v].GetBoundingBox) continue;
+            var objB = this.objects[v].GetBoundingBox();
+            if (!objB) continue;
+
+            var bndsx = objB.X + (objB.Width);
+            var bndsy = objB.Y + (objB.Height);
+
+            if (bounds.Width < 0) bounds.Width = objB.Width;
+            else if (bounds.Width < bndsx - bounds.X) bounds.Width = bndsx - bounds.X;
+
+            if (bounds.Height < 0) bounds.Height = objB.Height;
+            else if (bounds.Height < bndsy - bounds.Y) bounds.Height = bndsy - bounds.Y;
+        }
+
+        return bounds;
+    }
+
+    MoveShapeBy(x, y)
+    {
+        var difx = x;
+        var dify = y;
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (this.objects[v].X !== undefined)
+            {
+                this.objects[v].X += difx;
+                this.objects[v].Y += dify;
+            }
+            if (this.objects[v].CX !== undefined)
+            {
+                this.objects[v].CX += difx;
+                this.objects[v].CY += dify;
+            }
+            if (this.objects[v].CX2 !== undefined)
+            {
+                this.objects[v].CX2 += difx;
+                this.objects[v].CY2 += dify;
+            }
+        }
+    }
+
+    GetNearestObject(x, y, maxDist = 100, editMode = EditModeType.Points)
+    {
+        var cdist = maxDist + 100;
+        var typ = null;
+        var obj = null;
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (editMode == EditModeType.Points)
+            {
+                if (this.objects[v].X !== undefined)
+                {
+                    var dist = MathUtilities.getDistance(this.objects[v].X, this.objects[v].Y, x, y);
+                    if (dist < cdist)
+                    {
+                        cdist = dist;
+                        obj = this.objects[v];
+                        typ = PointType.xy;
+                    }
+                }
+            }
+            else if (editMode == EditModeType.Curves)
+            {
+                if (this.objects[v].CX !== undefined)
+                {
+                    var dist = MathUtilities.getDistance(this.objects[v].CX, this.objects[v].CY, x, y);
+                    if (dist < cdist)
+                    {
+                        cdist = dist;
+                        obj = this.objects[v];
+                        typ = PointType.c;
+                    }
+                }
+                if (this.objects[v].CX2 !== undefined)
+                {
+                    var dist = MathUtilities.getDistance(this.objects[v].CX2, this.objects[v].CY2, x, y);
+                    if (dist < cdist)
+                    {
+                        cdist = dist;
+                        obj = this.objects[v];
+                        typ = PointType.c2;
+                    }
+                }
+            }
+        }
+
+        return { Object: obj, Type: typ };
+    }
+
+    Resize(w, h, bounds)
+    {
+        var rebox = bounds.GetResizeBox(w, h);
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (this.objects[v].X !== undefined)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].X,
+                    this.objects[v].Y,
+                    bounds);
+                this.objects[v].X = px.X;
+                this.objects[v].Y = px.Y;
+            }
+            if (this.objects[v].CX !== undefined)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].CX,
+                    this.objects[v].CY,
+                    bounds);
+                this.objects[v].CX = px.X;
+                this.objects[v].CY = px.Y;
+            }
+            if (this.objects[v].CX2 !== undefined)
+            {
+                var px = rebox.PointMap(
+                    this.objects[v].CX2,
+                    this.objects[v].CY2,
+                    bounds);
+                this.objects[v].CX2 = px.X;
+                this.objects[v].CY2 = px.Y;
+            }
+        }
+    }
+
+    Build(canvas)
+    {
+        canvas.beginPath();
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Build(canvas);
+        }
+
+        canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
+        canvas.lineWidth = this.LineWidth;
+    }
+
+    Render(canvas)
+    {
+        canvas.beginPath();
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            this.objects[v].Render(canvas);
+        }
+        canvas.strokeStyle = this.Style;
+        canvas.fillStyle = this.Fill;
+        canvas.lineWidth = this.LineWidth;
+        canvas.fill();
+
+        canvas.beginPath();
+    }
+
+    DuplicateAt(x, y)
+    {
+        var font = new FontShape();
+        font.objects = [];
+        font.Char = this.Char;
+        font.ObjType = this.ObjType;
+        font.Style = this.Style;
+        font.Fill = this.Fill;
+        font.LineWidth = this.LineWidth;
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (this.objects[v].ObjType == ObjectType.Move)
+                font.objects.push(new MoveTo(this.objects[v].X, this.objects[v].Y));
+
+            if (this.objects[v].ObjType == ObjectType.Curve)
+            {
+                font.objects.push(new CurveTo(
+                    this.objects[v].X,
+                    this.objects[v].Y,
+                    this.objects[v].CX,
+                    this.objects[v].CY,
+                    this.objects[v].CX2,
+                    this.objects[v].CY2));
+            }
+
+            if (this.objects[v].ObjType == ObjectType.ClosePath)
+            {
+                font.objects.push(new ClosePath());
+            }
+        }
+
+        font.MoveShapeToCenter(x, y);
+
+        return font;
+    }
+
+    MoveShapeToCenter(x, y)
+    {
+        var bounds = this.GetBoundingBox();
+
+        var centx = bounds.X + (bounds.Width / 2);
+        var centy = bounds.Y + (bounds.Height / 2);
+
+        var difx = x - centx;
+        var dify = y - centy;
+
+        for (var v = 0; v < this.objects.length; v++)
+        {
+            if (this.objects[v].X !== undefined)
+            {
+                this.objects[v].X += difx;
+                this.objects[v].Y += dify;
+            }
+            if (this.objects[v].CX !== undefined)
+            {
+                this.objects[v].CX += difx;
+                this.objects[v].CY += dify;
+            }
+            if (this.objects[v].CX2 !== undefined)
+            {
+                this.objects[v].CX2 += difx;
+                this.objects[v].CY2 += dify;
+            }
+        }
     }
 }

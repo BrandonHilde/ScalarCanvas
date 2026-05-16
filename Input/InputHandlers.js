@@ -27,6 +27,9 @@ var MirrorTestb;
 var CurrentShape = null;
 var MirrorActive = MirrorType.None;
 
+var loadedFontParser = null;
+var loadedFontName = '';
+
 var EditShape = null;
 
 // Bounding box interaction state
@@ -339,12 +342,18 @@ function OnKeyPress(ev)
     {
         var shp = Builder.objects[shapeIndex];
 
-        if(shp.ObjType == ObjectType.Path)
+        if(shp.ObjType == ObjectType.Path || shp.ObjType == ObjectType.Font)
         {
             var dup = shp.DuplicateAt(MouseX, MouseY);
             Builder.AddObject(dup);
             undoStack.push({ action: 'add', object: dup });
         }
+    }
+
+    if(ev.key == HotKeys.FontMode)
+    {
+        currentState = DrawingState.Font;
+        UpdateCursorForMode();
     }
 
     if(ev.key == HotKeys.HideCursor)
@@ -406,9 +415,41 @@ function OnDrop(ev)
     const dt = ev.dataTransfer;
     const files = dt.files;
 
-    handleFiles(files);
+    if (currentState === DrawingState.Font)
+    {
+        handleFontFiles(files);
+    }
+    else
+    {
+        handleFiles(files);
+        handleFileSVG(files);
+    }
+}
 
-    handleFileSVG(files);
+function handleFontFiles(files)
+{
+    if (files.length === 0) return;
+    var file = files[0];
+    if (!file.name.toLowerCase().endsWith('.ttf'))
+    {
+        alert('Please drop a .ttf font file');
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        try
+        {
+            loadedFontParser = new TTFParser(ev.target.result);
+            loadedFontParser.parse();
+            loadedFontName = file.name;
+            openFontPanel();
+        }
+        catch (err)
+        {
+            alert('Failed to load font: ' + err.message);
+        }
+    };
+    reader.readAsArrayBuffer(file);
 }
 
 //MARK: resize
@@ -658,7 +699,7 @@ function UpdateMenu()
         {
             var del =  "Builder.RemoveSubObject(" + v + ", " + m +"); UpdateMenu();";
 
-            if(objs[m].ObjType == ObjectType.Move)
+            if(objs[m].ObjType == ObjectType.Move || objs[m].ObjType == ObjectType.ClosePath)
             {
 
             }
@@ -717,6 +758,10 @@ function UpdateCursorForMode()
     else if(currentState == DrawingState.Edit)
     {
         canvasObj.style.cursor = 'pointer';
+    }
+    else if(currentState == DrawingState.Font)
+    {
+        canvasObj.style.cursor = 'copy';
     }
     else
         canvasObj.style.cursor = 'default';
