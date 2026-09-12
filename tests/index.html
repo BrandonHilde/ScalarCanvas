@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>ScalarCanvas — Tests</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 24px;
+                background: #0f111a;
+                color: #ccd6f6;
+                font-family: system-ui, sans-serif;
+            }
+            h1 {
+                font-size: 18px;
+                margin: 0 0 4px;
+            }
+            .hint {
+                color: #5a6080;
+                font-size: 12px;
+                margin-bottom: 16px;
+            }
+            #status {
+                color: #64ffda;
+                font-family: monospace;
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+            button {
+                background: transparent;
+                border: 1px solid #2a2d3e;
+                color: #8892b0;
+                border-radius: 5px;
+                padding: 6px 12px;
+                cursor: pointer;
+                margin-bottom: 16px;
+            }
+            button:hover {
+                color: #ccd6f6;
+                background: #2a2d3e;
+            }
+            .result {
+                font-size: 13px;
+                padding: 6px 10px;
+                border-bottom: 1px solid #1a1d2e;
+                font-family: monospace;
+            }
+            .result .badge {
+                display: inline-block;
+                width: 46px;
+                font-weight: 700;
+            }
+            .result.pass .badge {
+                color: #64ffda;
+            }
+            .result.fail .badge {
+                color: #ff5370;
+            }
+            .result.fail pre {
+                color: #ff8a9b;
+                white-space: pre-wrap;
+                margin: 6px 0 0;
+                font-size: 11px;
+            }
+            .summary {
+                font-size: 14px;
+                font-weight: 700;
+                padding: 10px 0;
+                margin-bottom: 8px;
+                border-bottom: 2px solid #2a2d3e;
+            }
+            .summary.pass {
+                color: #64ffda;
+            }
+            .summary.fail {
+                color: #ff5370;
+            }
+            #dropped {
+                color: #82aaff;
+                font-size: 12px;
+                margin-bottom: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>ScalarCanvas — font I/O tests</h1>
+        <div class="hint">
+            Open this page directly, or drop any <code>.ttf</code> onto it to round-trip a real font.
+        </div>
+        <div id="status"></div>
+        <button id="rerun">Re-run</button>
+        <div id="dropped"></div>
+        <div id="results"></div>
+        <script src="../src/core/Point.js"></script>
+        <script src="../src/core/Contour.js"></script>
+        <script src="../src/core/Transform.js"></script>
+        <script src="../src/render/CanvasRenderer.js"></script>
+        <script src="../src/core/Glyph.js"></script>
+        <script src="../src/core/Metrics.js"></script>
+        <script src="../src/core/FontDocument.js"></script>
+        <script src="../src/core/History.js"></script>
+        <script src="../src/io/GlyphNames.js"></script>
+        <script src="../src/io/CubicToQuad.js"></script>
+        <script src="../src/io/TTFReader.js"></script>
+        <script src="../src/io/TTFWriter.js"></script>
+        <script src="../src/editor/EditOps.js"></script>
+        <script src="../src/editor/Editor.js"></script>
+        <script src="./harness.js"></script>
+        <script src="./fixtures.js"></script>
+        <script src="./ttf.test.js"></script>
+        <script src="./editor.test.js"></script>
+        <script src="./runner.js"></script>
+    </body>
+</html>

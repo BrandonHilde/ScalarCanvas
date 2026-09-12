@@ -1,0 +1,362 @@
+:root {
+    --bg: #0f111a;
+    --panel: #14161f;
+    --panel-2: #1a1d2e;
+    --border: #2a2d3e;
+    --text: #ccd6f6;
+    --muted: #8892b0;
+    --faint: #5a6080;
+    --accent: #64ffda;
+    --accent-2: #82aaff;
+    --accent-3: #ffcb6b;
+    --danger: #ff5370;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+}
+
+#app {
+    display: grid;
+    grid-template-rows: 44px 1fr 132px;
+    height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+    z-index: 5;
+}
+
+header .brand {
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: var(--accent);
+    margin-right: 6px;
+    white-space: nowrap;
+}
+
+header .brand small {
+    color: var(--faint);
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+header .spacer {
+    flex: 1;
+}
+
+header .separator {
+    width: 1px;
+    height: 22px;
+    background: var(--border);
+    margin: 0 4px;
+}
+
+button,
+label.btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    padding: 6px 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+button:hover,
+label.btn:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+button.active {
+    background: #2d4a3e;
+    color: var(--accent);
+    border-color: #3a6a5e;
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+input[type="text"] {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 6px 9px;
+    font-size: 12px;
+    outline: none;
+}
+
+input[type="text"]:focus {
+    border-color: var(--accent);
+}
+
+/* Body */
+main {
+    display: grid;
+    grid-template-columns: 240px 1fr 270px;
+    min-height: 0;
+}
+
+#sidebar {
+    background: var(--panel-2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#sidebar .search {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+#sidebar .search input {
+    width: 100%;
+}
+
+#glyphlist {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.glyph-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.glyph-item:hover {
+    background: var(--border);
+    color: var(--text);
+}
+
+.glyph-item.selected {
+    background: #22304a;
+    color: var(--accent);
+}
+
+.glyph-item .gid {
+    color: var(--faint);
+    font-family: monospace;
+    font-size: 10px;
+    width: 44px;
+    flex-shrink: 0;
+}
+
+.glyph-item .gname {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.glyph-item .gcp {
+    color: var(--faint);
+    font-family: monospace;
+    font-size: 10px;
+}
+
+#stage {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    background: var(--panel);
+}
+
+#canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+#empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--faint);
+    text-align: center;
+    pointer-events: none;
+}
+
+#empty-state h1 {
+    color: var(--muted);
+    font-size: 20px;
+    margin: 0;
+}
+
+#empty-state .hint {
+    font-size: 13px;
+}
+
+#empty-state .drop {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 26px 42px;
+    color: var(--accent-2);
+    font-size: 14px;
+}
+
+#status {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 12px;
+    background: rgba(20, 22, 31, 0.9);
+    border-top: 1px solid var(--border);
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--faint);
+}
+
+#status b {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+/* Preview strip */
+#preview-bar {
+    background: var(--panel-2);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr;
+    min-height: 0;
+}
+
+#preview-bar .preview-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+#preview-bar .preview-head span {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--faint);
+}
+
+#previewText {
+    flex: 1;
+}
+
+#preview {
+    display: block;
+    width: 100%;
+    height: 82px;
+}
+
+/* Inspector */
+#inspector {
+    background: var(--panel-2);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 10px 0 20px;
+}
+
+.insp-section {
+    padding: 10px 14px 14px;
+    border-bottom: 1px solid #25283c;
+}
+
+.insp-section h4 {
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.insp-section .form-row {
+    margin: 6px 0;
+}
+
+.insp-section .form-row label {
+    width: 74px;
+}
+
+#inspector input[type="text"],
+#inspector input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 12px;
+    outline: none;
+}
+
+#inspector input:focus {
+    border-color: var(--accent);
+}
+
+#inspector input:disabled,
+#inspector input[readonly] {
+    opacity: 0.55;
+}
+
+.insp-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.insp-buttons button {
+    font-size: 11px;
+    padding: 5px 9px;
+}
+
+.insp-hint {
+    padding: 12px 14px;
+    color: var(--faint);
+    font-size: 11px;
+    line-height: 1.6;
+}
+

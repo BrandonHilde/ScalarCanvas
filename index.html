@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>ScalarCanvas — Font Editor</title>
+        <link rel="stylesheet" href="src/app.css" />
+    </head>
+    <body>
+        <div id="app">
+            <header>
+                <div class="brand">ScalarCanvas <small>font editor</small></div>
+
+                <label class="btn" for="fileInput">Open TTF</label>
+                <input id="fileInput" type="file" accept=".ttf,font/ttf" />
+                <button id="exportBtn" disabled>Export TTF</button>
+
+                <div class="separator"></div>
+
+                <button class="tool active" data-tool="node" title="Node tool (N): select, move, add, delete points">Node</button>
+                <button class="tool" data-tool="pen" title="Pen tool (P): draw new contours">Pen</button>
+                <button class="tool" data-tool="metrics" title="Metrics tool (M): drag sidebearings & advance">Metrics</button>
+
+                <div class="separator"></div>
+
+                <button id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
+                <button id="redoBtn" disabled title="Redo (Ctrl+Shift+Z)">Redo</button>
+
+                <div class="spacer"></div>
+
+                <button id="togglePoints" class="active" title="Toggle points">Points</button>
+                <button id="toggleFill" class="active" title="Toggle fill">Fill</button>
+                <button id="toggleMetrics" class="active" title="Toggle metric guides">Guides</button>
+                <button id="fitBtn" disabled title="Fit glyph">Fit</button>
+            </header>
+
+            <main>
+                <aside id="sidebar">
+                    <div class="search">
+                        <input id="glyphSearch" type="text" placeholder="Search glyphs…" disabled />
+                    </div>
+                    <div id="glyphlist"></div>
+                </aside>
+
+                <section id="stage">
+                    <canvas id="canvas"></canvas>
+                    <div id="empty-state">
+                        <h1>ScalarCanvas</h1>
+                        <div class="drop">Drop a .ttf file here<br />or click “Open TTF”</div>
+                        <div class="hint">Round-trips TrueType fonts in the browser, no libraries.</div>
+                    </div>
+                    <div id="status"></div>
+                </section>
+
+                <aside id="inspector">
+                    <div class="insp-section">
+                        <h4>Glyph</h4>
+                        <div class="form-row"><label>Name</label><input id="insp-name" type="text" readonly /></div>
+                        <div class="form-row"><label>Unicode</label><input id="insp-unicode" type="text" readonly /></div>
+                    </div>
+
+                    <div class="insp-section">
+                        <h4>Spacing</h4>
+                        <div class="form-row"><label>Advance</label><input id="insp-advance" type="number" disabled /></div>
+                        <div class="form-row"><label>LSB</label><input id="insp-lsb" type="number" disabled /></div>
+                        <div class="form-row"><label>RSB</label><input id="insp-rsb" type="number" disabled /></div>
+                    </div>
+
+                    <div class="insp-section">
+                        <h4>Font metrics</h4>
+                        <div class="form-row"><label>Ascender</label><input id="insp-ascender" type="number" disabled /></div>
+                        <div class="form-row"><label>Descender</label><input id="insp-descender" type="number" disabled /></div>
+                        <div class="form-row"><label>x-height</label><input id="insp-xheight" type="number" disabled /></div>
+                        <div class="form-row"><label>Cap height</label><input id="insp-capheight" type="number" disabled /></div>
+                        <div class="form-row"><label>Line gap</label><input id="insp-linegap" type="number" disabled /></div>
+                    </div>
+
+                    <div class="insp-section">
+                        <h4>Contour</h4>
+                        <div class="insp-buttons">
+                            <button id="btn-reverse" disabled>Reverse</button>
+                            <button id="btn-closecontour" disabled>Open / Close</button>
+                            <button id="btn-delete-points" disabled>Delete points</button>
+                        </div>
+                    </div>
+
+                    <div class="insp-hint" id="insp-hint"></div>
+                </aside>
+            </main>
+
+            <div id="preview-bar">
+                <div class="preview-head">
+                    <span>Preview</span>
+                    <input id="previewText" type="text" value="The quick brown fox" disabled />
+                </div>
+                <canvas id="preview"></canvas>
+            </div>
+        </div>
+
+        <script src="src/core/Point.js"></script>
+        <script src="src/core/Contour.js"></script>
+        <script src="src/core/Transform.js"></script>
+        <script src="src/core/Glyph.js"></script>
+        <script src="src/core/Metrics.js"></script>
+        <script src="src/core/FontDocument.js"></script>
+        <script src="src/core/History.js"></script>
+        <script src="src/io/GlyphNames.js"></script>
+        <script src="src/io/CubicToQuad.js"></script>
+        <script src="src/io/TTFReader.js"></script>
+        <script src="src/io/TTFWriter.js"></script>
+        <script src="src/render/CanvasRenderer.js"></script>
+        <script src="src/editor/EditOps.js"></script>
+        <script src="src/editor/Editor.js"></script>
+        <script src="src/main.js"></script>
+    </body>
+</html>
