@@ -2,6 +2,7 @@ const els = {
     canvas: document.getElementById("canvas"),
     stage: document.getElementById("stage"),
     fileInput: document.getElementById("fileInput"),
+    newBtn: document.getElementById("newBtn"),
     exportBtn: document.getElementById("exportBtn"),
     togglePoints: document.getElementById("togglePoints"),
     toggleFill: document.getElementById("toggleFill"),
@@ -11,6 +12,8 @@ const els = {
     redoBtn: document.getElementById("redoBtn"),
     glyphList: document.getElementById("glyphlist"),
     glyphSearch: document.getElementById("glyphSearch"),
+    addGlyphInput: document.getElementById("addGlyphInput"),
+    addGlyphBtn: document.getElementById("addGlyphBtn"),
     status: document.getElementById("status"),
     empty: document.getElementById("empty-state"),
     preview: document.getElementById("preview"),
@@ -29,12 +32,21 @@ const els = {
     btnReverse: document.getElementById("btn-reverse"),
     btnClose: document.getElementById("btn-closecontour"),
     btnDelete: document.getElementById("btn-delete-points"),
+    bgInput: document.getElementById("bgInput"),
+    bgToggle: document.getElementById("bgToggle"),
+    bgClear: document.getElementById("bgClear"),
+    bgOpacity: document.getElementById("bgOpacity"),
+    bgScale: document.getElementById("bgScale"),
+    bgX: document.getElementById("bgX"),
+    bgY: document.getElementById("bgY"),
 };
 
 const TOOL_HINTS = {
     node: "Node: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes. [ ] change glyph.",
     pen: "Pen: click to add a point, drag to pull curve handles, click the first point to close. Alt breaks the handle. Enter finishes open; Esc cancels.",
+    freehand: "Freehand: drag to draw freely and a smooth curve is fitted to the stroke. Finish near the start point to close the contour. Esc cancels.",
     metrics: "Metrics: drag the purple advance guide or the sidebearing guide. Edit exact values in the panel.",
+    background: "Image: drag the tracing image to move it, drag the bottom-right handle to scale. Load an image or tweak opacity, scale and position in the panel.",
 };
 
 let font = null;
@@ -62,12 +74,18 @@ function resizePreview() {
 /* ── font loading ───────────────────────────────────── */
 
 function loadFont(arrayBuffer) {
+    let parsed;
     try {
-        font = new TTFReader(arrayBuffer).parse();
+        parsed = new TTFReader(arrayBuffer).parse();
     } catch (err) {
         alert("Could not read font:\n" + err.message);
         return;
     }
+    setFont(parsed);
+}
+
+function setFont(next) {
+    font = next;
 
     renderer.doc = font;
     els.empty.style.display = "none";
@@ -75,6 +93,8 @@ function loadFont(arrayBuffer) {
     els.fitBtn.disabled = false;
     els.glyphSearch.disabled = false;
     els.previewText.disabled = false;
+    els.addGlyphInput.disabled = false;
+    els.addGlyphBtn.disabled = false;
 
     editor.setDocument(font);
     history.clear();
@@ -83,7 +103,114 @@ function loadFont(arrayBuffer) {
     redraw();
     updateStatus();
     updateInspector();
+    updateBackgroundControls();
     drawPreview();
+}
+
+function newFont() {
+    const doc = new FontDocument();
+    doc.setName(1, "New Font");
+    doc.setName(2, "Regular");
+    doc.setName(4, "New Font Regular");
+    doc.setName(6, "NewFont-Regular");
+
+    const notdef = doc.addGlyph(new Glyph(".notdef"));
+    notdef.advanceWidth = Math.round(doc.unitsPerEm * 0.5);
+
+    setFont(doc);
+}
+
+function parseGlyphQuery(query) {
+    const text = (query || "").trim();
+    if (!text) return null;
+
+    let hex = null;
+    if (/^U\+[0-9a-fA-F]{1,6}$/i.test(text)) hex = text.slice(2);
+    else if (/^uni[0-9a-fA-F]{4}$/.test(text)) hex = text.slice(3);
+    else if (/^u[0-9a-fA-F]{4,6}$/.test(text)) hex = text.slice(1);
+
+    if (hex !== null) {
+        const cp = parseInt(hex, 16);
+        if (cp <= 0x10ffff) return { name: unicodeToGlyphName(cp), unicodes: [cp] };
+    }
+
+    if ([...text].length === 1) {
+        const cp = text.codePointAt(0);
+        return { name: unicodeToGlyphName(cp), unicodes: [cp] };
+    }
+
+    const cp = glyphNameToUnicode(text);
+    return { name: text, unicodes: cp !== null ? [cp] : [] };
+}
+
+function addGlyphFromInput() {
+    if (!font) return;
+    const spec = parseGlyphQuery(els.addGlyphInput.value);
+    if (!spec) return;
+
+    const existing = spec.unicodes.length ? font.getGlyphByCodepoint(spec.unicodes[0]) : null;
+    if (existing) {
+        const index = font.glyphs.indexOf(existing);
+        els.addGlyphInput.value = "";
+        selectGlyph(index);
+        return;
+    }
+
+    const glyph = font.addGlyph(new Glyph(spec.name));
+    glyph.unicodes = spec.unicodes.slice();
+    glyph.advanceWidth = spec.unicodes[0] === 0x20 ? 250 : Math.round(font.unitsPerEm * 0.6);
+
+    els.addGlyphInput.value = "";
+    els.glyphSearch.value = "";
+    selectGlyph(font.numGlyphs - 1);
+}
+
+/* ── tracing background ─────────────────────────────── */
+
+function loadBackground(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        const image = new Image();
+        image.onload = () => {
+            const unitsPerEm = font ? font.unitsPerEm : 1000;
+            const ascender = font ? font.metrics.ascender : 800;
+            const opacity = parseFloat(els.bgOpacity.value);
+            renderer.background = {
+                image,
+                opacity: Number.isFinite(opacity) ? opacity : 0.5,
+                scale: unitsPerEm / Math.max(1, image.height),
+                x: 0,
+                y: ascender,
+                visible: true,
+                smoothing: true,
+            };
+            updateBackgroundControls();
+            redraw();
+        };
+        image.onerror = () => alert("Could not load image.");
+        image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateBackgroundControls() {
+    const bg = renderer.background;
+    const has = !!bg;
+
+    els.bgToggle.disabled = !has;
+    els.bgClear.disabled = !has;
+    els.bgOpacity.disabled = !has;
+    els.bgScale.disabled = !has;
+    els.bgX.disabled = !has;
+    els.bgY.disabled = !has;
+    if (!has) return;
+
+    els.bgToggle.textContent = bg.visible ? "Hide" : "Show";
+    if (document.activeElement !== els.bgOpacity) els.bgOpacity.value = bg.opacity;
+    if (document.activeElement !== els.bgScale) els.bgScale.value = Number(bg.scale.toFixed(4));
+    if (document.activeElement !== els.bgX) els.bgX.value = Math.round(bg.x);
+    if (document.activeElement !== els.bgY) els.bgY.value = Math.round(bg.y);
 }
 
 /* ── glyph list ─────────────────────────────────────── */
@@ -247,7 +374,9 @@ function updateCursor() {
         return;
     }
     if (editor.tool === "pen") els.canvas.style.cursor = "crosshair";
+    else if (editor.tool === "freehand") els.canvas.style.cursor = "crosshair";
     else if (editor.tool === "metrics") els.canvas.style.cursor = "ew-resize";
+    else if (editor.tool === "background") els.canvas.style.cursor = "move";
     else els.canvas.style.cursor = "default";
 }
 
@@ -315,7 +444,10 @@ function drawPreview() {
 
 /* ── editor hooks ───────────────────────────────────── */
 
-editor.onChange = () => redraw();
+editor.onChange = () => {
+    redraw();
+    updateBackgroundControls();
+};
 editor.onSelectionChange = () => {
     updateInspector();
     updateStatus();
@@ -339,11 +471,32 @@ els.fileInput.addEventListener("change", (e) => {
     reader.readAsArrayBuffer(file);
 });
 
+els.newBtn.addEventListener("click", () => {
+    if (font && !confirm("Discard the current font and start a new one?")) return;
+    newFont();
+});
+
+els.addGlyphBtn.addEventListener("click", addGlyphFromInput);
+els.addGlyphInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addGlyphFromInput();
+});
+
+function isImageFile(file) {
+    if (file.type) return file.type.startsWith("image/");
+    return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(file.name);
+}
+
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (!file) return;
+
+    if (isImageFile(file)) {
+        loadBackground(file);
+        return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => loadFont(reader.result);
     reader.readAsArrayBuffer(file);
@@ -400,6 +553,42 @@ els.redoBtn.addEventListener("click", () => history.redo());
 els.btnReverse.addEventListener("click", () => editor.reverseContours());
 els.btnClose.addEventListener("click", () => editor.toggleContourClosed());
 els.btnDelete.addEventListener("click", () => editor.deleteSelection());
+
+els.bgInput.addEventListener("change", (e) => {
+    loadBackground(e.target.files[0]);
+    e.target.value = "";
+});
+els.bgToggle.addEventListener("click", () => {
+    if (!renderer.background) return;
+    renderer.background.visible = !renderer.background.visible;
+    updateBackgroundControls();
+    redraw();
+});
+els.bgClear.addEventListener("click", () => {
+    renderer.background = null;
+    updateBackgroundControls();
+    redraw();
+});
+els.bgOpacity.addEventListener("input", () => {
+    if (!renderer.background) return;
+    renderer.background.opacity = Math.min(1, Math.max(0, parseFloat(els.bgOpacity.value) || 0));
+    redraw();
+});
+els.bgScale.addEventListener("change", () => {
+    if (!renderer.background) return;
+    renderer.background.scale = Math.max(0.01, parseFloat(els.bgScale.value) || 0.01);
+    redraw();
+});
+els.bgX.addEventListener("change", () => {
+    if (!renderer.background) return;
+    renderer.background.x = parseFloat(els.bgX.value) || 0;
+    redraw();
+});
+els.bgY.addEventListener("change", () => {
+    if (!renderer.background) return;
+    renderer.background.y = parseFloat(els.bgY.value) || 0;
+    redraw();
+});
 
 els.glyphSearch.addEventListener("input", () => buildGlyphList(els.glyphSearch.value));
 els.previewText.addEventListener("input", drawPreview);
@@ -513,7 +702,9 @@ window.addEventListener("keydown", (e) => {
     }
     if (e.key === "n" || e.key === "N") { setTool("node"); return; }
     if (e.key === "p" || e.key === "P") { setTool("pen"); return; }
+    if (e.key === "f" || e.key === "F") { setTool("freehand"); return; }
     if (e.key === "m" || e.key === "M") { setTool("metrics"); return; }
+    if (e.key === "i" || e.key === "I") { setTool("background"); return; }
     if (e.key === "[") { selectGlyph((editor.glyphIndex - 1 + font.numGlyphs) % font.numGlyphs); return; }
     if (e.key === "]") { selectGlyph((editor.glyphIndex + 1) % font.numGlyphs); return; }
     if (e.key === "r" || e.key === "R") { editor.reverseContours(); return; }

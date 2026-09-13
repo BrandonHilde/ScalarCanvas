@@ -21,6 +21,7 @@ class CanvasRenderer {
         this.showPoints = true;
         this.showMetrics = true;
         this.showFill = true;
+        this.background = null;
         this.dpr = window.devicePixelRatio || 1;
     }
 
@@ -79,6 +80,7 @@ class CanvasRenderer {
 
     render(glyph) {
         this.clear();
+        this.drawBackground();
         if (!glyph) {
             this.drawOrigin();
             return;
@@ -114,6 +116,30 @@ class CanvasRenderer {
         ctx.moveTo(this.sx(0), 0);
         ctx.lineTo(this.sx(0), this.canvas.height);
         ctx.stroke();
+    }
+
+    // Image bounds in font units: x0,y0 is bottom-left, x1,y1 is top-right.
+    backgroundBounds() {
+        const bg = this.background;
+        if (!bg || !bg.image) return null;
+        const w = bg.image.width * bg.scale;
+        const h = bg.image.height * bg.scale;
+        return { x0: bg.x, y0: bg.y - h, x1: bg.x + w, y1: bg.y };
+    }
+
+    drawBackground() {
+        const bg = this.background;
+        if (!bg || !bg.image || !bg.visible) return;
+        const { ctx } = this;
+        const w = bg.image.width * bg.scale * this.view.scale;
+        const h = bg.image.height * bg.scale * this.view.scale;
+        const x = this.sx(bg.x);
+        const y = this.sy(bg.y);
+        ctx.save();
+        ctx.globalAlpha = bg.opacity;
+        ctx.imageSmoothingEnabled = bg.smoothing !== false;
+        ctx.drawImage(bg.image, x, y, w, h);
+        ctx.restore();
     }
 
     drawMetrics() {

@@ -34,6 +34,8 @@ const EditorTool = Object.freeze({
     Node: "node",
     Pen: "pen",
     Metrics: "metrics",
+    Background: "background",
+    Freehand: "freehand",
 });
 
 class Editor {
@@ -48,6 +50,7 @@ class Editor {
         this.pointer = { x: 0, y: 0 };
         this.drag = null;
         this.pen = null;
+        this.freehand = null;
         this.snap = true;
         this.gridSize = 0;
         this.onChange = null;
@@ -67,6 +70,7 @@ class Editor {
         this.glyphIndex = 0;
         this.selection.clear();
         this.pen = null;
+        this.freehand = null;
         this.drag = null;
         this.requestRender();
         this.emitSelection();
@@ -76,6 +80,7 @@ class Editor {
         this.glyphIndex = index;
         this.selection.clear();
         this.pen = null;
+        this.freehand = null;
         this.drag = null;
         this.requestRender();
         this.emitSelection();
@@ -84,6 +89,7 @@ class Editor {
     setTool(tool) {
         this.tool = tool;
         this.pen = null;
+        this.freehand = null;
         this.drag = null;
         this.requestRender();
         this.emitSelection();
@@ -151,6 +157,14 @@ class Editor {
         }
         if (this.tool === EditorTool.Metrics) {
             this.metricsDown(p);
+            return;
+        }
+        if (this.tool === EditorTool.Background) {
+            this.backgroundDown(p);
+            return;
+        }
+        if (this.tool === EditorTool.Freehand) {
+            this.freehandDown(p);
             return;
         }
 
@@ -221,6 +235,11 @@ class Editor {
             return;
         }
 
+        if (drag && drag.type === "freehand") {
+            this.freehandMove(p);
+            return;
+        }
+
         if (!drag) {
             this.requestRender();
             return;
@@ -259,6 +278,16 @@ class Editor {
             glyph.leftSideBearing = Math.round(p.x);
             this.requestRender();
             this.emitSelection();
+        } else if (drag.type === "bgmove") {
+            drag.bg.x = drag.origX + (p.x - drag.start.x);
+            drag.bg.y = drag.origY + (p.y - drag.start.y);
+            this.requestRender();
+        } else if (drag.type === "bgscale") {
+            const bg = drag.bg;
+            const h = Math.max(1, bg.image.height);
+            const scale = (bg.y - p.y) / h;
+            bg.scale = Math.max(0.01, scale);
+            this.requestRender();
         }
     }
 
@@ -272,6 +301,9 @@ class Editor {
             this.finishMarquee(drag);
         } else if (drag.type === "advance" || drag.type === "lsb") {
             this.commit(drag.before, "metrics");
+        } else if (drag.type === "freehand") {
+            this.finishFreehand();
+            return;
         }
 
         this.drag = null;
@@ -339,8 +371,61 @@ class Editor {
         this.commit(before, "draw contour");
     }
 
-    // ── metrics tool ─────────────────────────────────────
+    // ── freehand tool ────────────────────────────────────
 
+    freehandDown(p) {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite) return;
+        this.freehand = { points: [{ x: p.x, y: p.y }] };
+        this.drag = { type: "freehand" };
+        this.selection.clear();
+        this.requestRender();
+    }
+
+    freehandMove(p) {
+        if (!this.freehand) return;
+        const points = this.freehand.points;
+        const last = points[points.length - 1];
+        if (Math.hypot(p.x - last.x, p.y - last.y) >= this.tolerance(2)) {
+            points.push({ x: p.x, y: p.y });
+        }
+        this.requestRender();
+    }
+
+    finishFreehand() {
+        const glyph = this.glyph;
+        const stroke = this.freehand;
+        this.freehand = null;
+        this.drag = null;
+
+        if (!glyph || !stroke || stroke.points.length < 2) {
+            this.requestRender();
+            return;
+        }
+
+        const pts = stroke.points;
+        const first = pts[0];
+        const last = pts[pts.length - 1];
+        const closed =
+            pts.length >= 4 &&
+            Math.hypot(last.x - first.x, last.y - first.y) <= this.tolerance(20);
+
+        const contour = fitFreehandStroke(pts, {
+            segmentLength: this.tolerance(70),
+            closed,
+        });
+        if (!contour) {
+            this.requestRender();
+            return;
+        }
+
+        const before = glyph.clone();
+        glyph.contours.push(contour);
+        this.selection = new Set();
+        this.commit(before, "freehand");
+    }
+
+    // ── metrics tool ─────────────────────────────────────
     metricsDown(p) {
         const glyph = this.glyph;
         if (!glyph) return;
@@ -350,6 +435,31 @@ class Editor {
             this.drag = { type: "advance", before: glyph.clone() };
         } else if (Math.abs(p.x - glyph.leftSideBearing) <= tol) {
             this.drag = { type: "lsb", before: glyph.clone() };
+        }
+    }
+
+    // ── background image tool ────────────────────────────
+
+    backgroundDown(p) {
+        const bg = this.renderer.background;
+        if (!bg || !bg.image || !bg.visible) return;
+        const b = this.renderer.backgroundBounds();
+        if (!b) return;
+        const tol = this.tolerance(12);
+
+        const handle = { x: b.x1, y: b.y0 };
+        if (Math.hypot(p.x - handle.x, p.y - handle.y) <= tol) {
+            this.drag = { type: "bgscale", bg };
+            return;
+        }
+        if (p.x >= b.x0 && p.x <= b.x1 && p.y >= b.y0 && p.y <= b.y1) {
+            this.drag = {
+                type: "bgmove",
+                bg,
+                start: { x: p.x, y: p.y },
+                origX: bg.x,
+                origY: bg.y,
+            };
         }
     }
 
@@ -369,6 +479,7 @@ class Editor {
         }
         if (ev.key === "Escape") {
             this.pen = null;
+            this.freehand = null;
             this.selection.clear();
             this.drag = null;
             this.requestRender();
@@ -492,7 +603,39 @@ class Editor {
 
         if (this.tool === EditorTool.Node) this.drawSelection(ctx, r);
         if (this.pen) this.drawPen(ctx, r);
+        if (this.freehand) this.drawFreehand(ctx, r);
         if (this.drag && this.drag.type === "marquee") this.drawMarquee(ctx, r);
+        if (this.tool === EditorTool.Background) this.drawBackgroundOverlay(ctx, r);
+    }
+
+    drawFreehand(ctx, r) {
+        const contour = fitFreehandStroke(this.freehand.points, {
+            segmentLength: this.tolerance(70),
+            closed: false,
+        });
+        if (!contour) return;
+        r.pathContours([contour]);
+        ctx.strokeStyle = "rgba(130, 170, 255, 0.9)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+
+    drawBackgroundOverlay(ctx, r) {
+        const b = r.backgroundBounds();
+        if (!b) return;
+        const x0 = r.sx(b.x0);
+        const y0 = r.sy(b.y0);
+        const x1 = r.sx(b.x1);
+        const y1 = r.sy(b.y1);
+        ctx.save();
+        ctx.strokeStyle = "rgba(199, 146, 234, 0.9)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 4]);
+        ctx.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#c792ea";
+        ctx.fillRect(x1 - 6, y0 - 6, 12, 12);
+        ctx.restore();
     }
 
     drawSelection(ctx, r) {
