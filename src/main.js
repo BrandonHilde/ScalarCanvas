@@ -3,6 +3,7 @@ const els = {
     stage: document.getElementById("stage"),
     fileInput: document.getElementById("fileInput"),
     newBtn: document.getElementById("newBtn"),
+    emptyNewBtn: document.getElementById("emptyNewBtn"),
     exportBtn: document.getElementById("exportBtn"),
     togglePoints: document.getElementById("togglePoints"),
     toggleFill: document.getElementById("toggleFill"),
@@ -14,6 +15,15 @@ const els = {
     glyphSearch: document.getElementById("glyphSearch"),
     addGlyphInput: document.getElementById("addGlyphInput"),
     addGlyphBtn: document.getElementById("addGlyphBtn"),
+    addShape: document.getElementById("addShape"),
+    polygonPop: document.getElementById("polygonPop"),
+    polygonSides: document.getElementById("polygonSides"),
+    polygonAdd: document.getElementById("polygonAdd"),
+    modal: document.getElementById("modal"),
+    modalTitle: document.getElementById("modalTitle"),
+    modalMessage: document.getElementById("modalMessage"),
+    modalOk: document.getElementById("modalOk"),
+    modalCancel: document.getElementById("modalCancel"),
     status: document.getElementById("status"),
     empty: document.getElementById("empty-state"),
     preview: document.getElementById("preview"),
@@ -42,12 +52,14 @@ const els = {
 };
 
 const TOOL_HINTS = {
-    node: "Node: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes. [ ] change glyph.",
+    edit: "Edit: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes. [ ] change glyph.",
     pen: "Pen: click to add a point, drag to pull curve handles, click the first point to close. Alt breaks the handle. Enter finishes open; Esc cancels.",
-    freehand: "Freehand: drag to draw freely and a smooth curve is fitted to the stroke. Finish near the start point to close the contour. Esc cancels.",
+    freehand: "Freehand: drag to draw freely and a smooth curve is fitted to the stroke. The contour stays open and unfilled. Esc cancels.",
     metrics: "Metrics: drag the purple advance guide or the sidebearing guide. Edit exact values in the panel.",
     background: "Image: drag the tracing image to move it, drag the bottom-right handle to scale. Load an image or tweak opacity, scale and position in the panel.",
 };
+
+const TOOL_ORDER = ["edit", "pen", "freehand", "metrics", "background"];
 
 let font = null;
 const history = new History();
@@ -78,7 +90,7 @@ function loadFont(arrayBuffer) {
     try {
         parsed = new TTFReader(arrayBuffer).parse();
     } catch (err) {
-        alert("Could not read font:\n" + err.message);
+        showAlert("Could not read font:\n" + err.message, "Open failed");
         return;
     }
     setFont(parsed);
@@ -95,6 +107,7 @@ function setFont(next) {
     els.previewText.disabled = false;
     els.addGlyphInput.disabled = false;
     els.addGlyphBtn.disabled = false;
+    els.addShape.disabled = false;
 
     editor.setDocument(font);
     history.clear();
@@ -188,7 +201,7 @@ function loadBackground(file) {
             updateBackgroundControls();
             redraw();
         };
-        image.onerror = () => alert("Could not load image.");
+        image.onerror = () => showAlert("Could not load image.", "Image failed");
         image.src = reader.result;
     };
     reader.readAsDataURL(file);
@@ -461,6 +474,49 @@ history.onChange(() => {
     redraw();
 });
 
+/* ── modal popups ───────────────────────────────────── */
+
+let modalResolve = null;
+
+function openModal({ title = "", message = "", confirm = false, okLabel = "OK", cancelLabel = "Cancel" } = {}) {
+    if (modalResolve) {
+        const previous = modalResolve;
+        modalResolve = null;
+        previous(false);
+    }
+
+    return new Promise((resolve) => {
+        modalResolve = resolve;
+        els.modalTitle.textContent = title;
+        els.modalMessage.textContent = message;
+        els.modalOk.textContent = okLabel;
+        els.modalCancel.textContent = cancelLabel;
+        els.modalCancel.hidden = !confirm;
+        els.modal.hidden = false;
+        els.modalOk.focus();
+    });
+}
+
+function closeModal(result) {
+    if (els.modal.hidden) return;
+    els.modal.hidden = true;
+    const resolve = modalResolve;
+    modalResolve = null;
+    if (resolve) resolve(result);
+}
+
+function showAlert(message, title = "ScalarCanvas") {
+    return openModal({ title, message });
+}
+
+function showConfirm(message, title = "ScalarCanvas", okLabel = "OK") {
+    return openModal({ title, message, confirm: true, okLabel });
+}
+
+els.modalOk.addEventListener("click", () => closeModal(true));
+els.modalCancel.addEventListener("click", () => closeModal(false));
+els.modal.querySelector(".modal-backdrop").addEventListener("click", () => closeModal(false));
+
 /* ── event wiring ───────────────────────────────────── */
 
 els.fileInput.addEventListener("change", (e) => {
@@ -471,10 +527,12 @@ els.fileInput.addEventListener("change", (e) => {
     reader.readAsArrayBuffer(file);
 });
 
-els.newBtn.addEventListener("click", () => {
-    if (font && !confirm("Discard the current font and start a new one?")) return;
+els.newBtn.addEventListener("click", async () => {
+    if (font && !(await showConfirm("Discard the current font and start a new one?", "New font", "Discard"))) return;
     newFont();
 });
+
+els.emptyNewBtn.addEventListener("click", () => newFont());
 
 els.addGlyphBtn.addEventListener("click", addGlyphFromInput);
 els.addGlyphInput.addEventListener("keydown", (e) => {
@@ -514,13 +572,62 @@ els.exportBtn.addEventListener("click", () => {
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
-        alert("Export failed:\n" + err.message);
+        showAlert("Export failed:\n" + err.message, "Export failed");
         console.error(err);
     }
 });
 
 document.querySelectorAll("header .tool").forEach((btn) => {
     btn.addEventListener("click", () => setTool(btn.dataset.tool));
+});
+
+function closePolygonPop() {
+    els.polygonPop.hidden = true;
+    els.addShape.value = "";
+}
+
+function commitPolygon() {
+    const raw = parseFloat(els.polygonSides.value);
+    const sides = Math.max(3, Math.min(24, Math.round(Number.isFinite(raw) ? raw : 6)));
+    els.polygonSides.value = String(sides);
+    if (font && editor.glyph) editor.addShape("polygon", sides);
+    closePolygonPop();
+}
+
+els.addShape.addEventListener("change", () => {
+    const kind = els.addShape.value;
+    if (!kind || !font || !editor.glyph) {
+        els.addShape.value = "";
+        return;
+    }
+
+    if (kind === "polygon") {
+        els.polygonPop.hidden = false;
+        els.polygonSides.focus();
+        els.polygonSides.select();
+        return;
+    }
+
+    editor.addShape(kind);
+    els.addShape.value = "";
+});
+
+els.polygonAdd.addEventListener("click", commitPolygon);
+
+els.polygonSides.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        commitPolygon();
+    } else if (e.key === "Escape") {
+        e.preventDefault();
+        closePolygonPop();
+    }
+});
+
+document.addEventListener("mousedown", (e) => {
+    if (els.polygonPop.hidden) return;
+    if (e.target.closest(".shape-add")) return;
+    closePolygonPop();
 });
 
 els.togglePoints.addEventListener("click", () => {
@@ -685,6 +792,13 @@ els.canvas.addEventListener("wheel", (e) => {
 }, { passive: false });
 
 window.addEventListener("keydown", (e) => {
+    if (!els.modal.hidden) {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            closeModal(false);
+        }
+        return;
+    }
     if (!font) return;
     const tag = e.target && e.target.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -700,7 +814,15 @@ window.addEventListener("keydown", (e) => {
         history.redo();
         return;
     }
-    if (e.key === "n" || e.key === "N") { setTool("node"); return; }
+    if (e.key === "Tab") {
+        e.preventDefault();
+        const i = TOOL_ORDER.indexOf(editor.tool);
+        const step = e.shiftKey ? -1 : 1;
+        const next = TOOL_ORDER[(i + step + TOOL_ORDER.length) % TOOL_ORDER.length];
+        setTool(next);
+        return;
+    }
+    if (e.key === "e" || e.key === "E") { setTool("edit"); return; }
     if (e.key === "p" || e.key === "P") { setTool("pen"); return; }
     if (e.key === "f" || e.key === "F") { setTool("freehand"); return; }
     if (e.key === "m" || e.key === "M") { setTool("metrics"); return; }
@@ -716,4 +838,5 @@ window.addEventListener("resize", resize);
 
 resize();
 updateHint();
+updateCursor();
 renderer.clear();

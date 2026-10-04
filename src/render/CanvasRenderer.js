@@ -90,11 +90,15 @@ class CanvasRenderer {
 
         const contours = glyph.getOutlineContours((i) => this.doc.resolveGlyph(i));
 
-        this.pathContours(contours);
         if (this.showFill) {
-            this.ctx.fillStyle = COLORS.fill;
-            this.ctx.fill("nonzero");
+            const closed = contours.filter((c) => c.closed);
+            if (closed.length) {
+                this.pathContours(closed);
+                this.ctx.fillStyle = COLORS.fill;
+                this.ctx.fill("nonzero");
+            }
         }
+        this.pathContours(contours);
         this.ctx.strokeStyle = COLORS.outline;
         this.ctx.lineWidth = 1.5;
         this.ctx.stroke();

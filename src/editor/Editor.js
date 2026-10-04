@@ -31,7 +31,7 @@ class GlyphEditCommand {
 }
 
 const EditorTool = Object.freeze({
-    Node: "node",
+    Edit: "edit",
     Pen: "pen",
     Metrics: "metrics",
     Background: "background",
@@ -44,7 +44,7 @@ class Editor {
         this.renderer = renderer;
         this.history = history;
         this.glyphIndex = 0;
-        this.tool = EditorTool.Node;
+        this.tool = EditorTool.Freehand;
         this.selection = new Set();
         this.mouse = { x: 0, y: 0 };
         this.pointer = { x: 0, y: 0 };
@@ -404,15 +404,10 @@ class Editor {
         }
 
         const pts = stroke.points;
-        const first = pts[0];
-        const last = pts[pts.length - 1];
-        const closed =
-            pts.length >= 4 &&
-            Math.hypot(last.x - first.x, last.y - first.y) <= this.tolerance(20);
 
         const contour = fitFreehandStroke(pts, {
             segmentLength: this.tolerance(70),
-            closed,
+            closed: false,
         });
         if (!contour) {
             this.requestRender();
@@ -423,6 +418,40 @@ class Editor {
         glyph.contours.push(contour);
         this.selection = new Set();
         this.commit(before, "freehand");
+    }
+
+    // ── add shape ────────────────────────────────────────
+
+    defaultShapeBox() {
+        const upm = this.doc ? this.doc.unitsPerEm : 1000;
+        const m = this.doc ? this.doc.metrics : null;
+        const cap = m && m.capHeight ? m.capHeight : upm * 0.7;
+        const glyph = this.glyph;
+        const advance = glyph && glyph.advanceWidth > 0 ? glyph.advanceWidth : upm * 0.6;
+        const w = Math.min(advance, upm) * 0.8;
+        const h = cap * 0.8;
+        const cx = advance / 2;
+        const cy = cap / 2;
+        return { x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 };
+    }
+
+    addShape(kind, sides) {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite) return;
+
+        const contour = createShapeContour(kind, this.defaultShapeBox(), sides);
+        if (!contour) return;
+
+        const before = glyph.clone();
+        glyph.contours.push(contour);
+        glyph.correctDirection();
+
+        const ci = glyph.contours.length - 1;
+        this.selection = new Set();
+        for (let pi = 0; pi < glyph.contours[ci].points.length; pi++) {
+            this.selection.add(`${ci}:${pi}`);
+        }
+        this.commit(before, "add " + kind);
     }
 
     // ── metrics tool ─────────────────────────────────────
@@ -601,7 +630,7 @@ class Editor {
         if (!glyph) return;
         const r = this.renderer;
 
-        if (this.tool === EditorTool.Node) this.drawSelection(ctx, r);
+        if (this.tool === EditorTool.Edit) this.drawSelection(ctx, r);
         if (this.pen) this.drawPen(ctx, r);
         if (this.freehand) this.drawFreehand(ctx, r);
         if (this.drag && this.drag.type === "marquee") this.drawMarquee(ctx, r);

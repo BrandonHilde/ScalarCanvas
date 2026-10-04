@@ -10,6 +10,7 @@
     --accent-2: #82aaff;
     --accent-3: #ffcb6b;
     --danger: #ff5370;
+    color-scheme: dark;
 }
 
 * {
@@ -97,6 +98,90 @@ button.active {
 button:disabled {
     opacity: 0.4;
     cursor: default;
+}
+
+header .shape-add {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--faint);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+header .shape-add select {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 6px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+header .shape-add select:hover:not(:disabled) {
+    background: var(--border);
+    color: var(--text);
+}
+
+header .shape-add select:focus {
+    border-color: var(--accent);
+}
+
+header .shape-add select:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.shape-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    z-index: 20;
+}
+
+.shape-pop[hidden] {
+    display: none;
+}
+
+.shape-pop label {
+    color: var(--faint);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.shape-pop input {
+    width: 56px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 5px 6px;
+    font-size: 12px;
+    outline: none;
+}
+
+.shape-pop input:focus {
+    border-color: var(--accent);
+}
+
+.shape-pop button {
+    padding: 5px 10px;
 }
 
 input[type="file"] {
@@ -241,6 +326,13 @@ main {
 
 #empty-state .hint {
     font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#empty-state button {
+    pointer-events: auto;
 }
 
 #empty-state .drop {
@@ -381,5 +473,70 @@ main {
     color: var(--faint);
     font-size: 11px;
     line-height: 1.6;
+}
+
+/* Modal popups (alerts / confirms) */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.modal-panel {
+    position: relative;
+    width: min(420px, calc(100vw - 40px));
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-panel h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.modal-message {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-line;
+    word-break: break-word;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.modal-actions button {
+    min-width: 76px;
+}
+
+#modalOk {
+    background: #2d4a3e;
+    color: var(--accent);
+    border-color: #3a6a5e;
+}
+
+#modalCancel[hidden] {
+    display: none;
 }
 

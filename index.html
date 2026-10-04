@@ -18,11 +18,35 @@
 
                 <div class="separator"></div>
 
-                <button class="tool active" data-tool="node" title="Node tool (N): select, move, add, delete points">Node</button>
+                <button class="tool" data-tool="edit" title="Edit tool (E): select, move, add, delete points">Edit</button>
                 <button class="tool" data-tool="pen" title="Pen tool (P): draw new contours">Pen</button>
-                <button class="tool" data-tool="freehand" title="Freehand tool (F): draw freely and fit a smooth curve">Freehand</button>
+                <button class="tool active" data-tool="freehand" title="Freehand tool (F): draw freely and fit a smooth curve">Freehand</button>
                 <button class="tool" data-tool="metrics" title="Metrics tool (M): drag sidebearings & advance">Metrics</button>
                 <button class="tool" data-tool="background" title="Image tool (I): move &amp; scale the tracing image">Image</button>
+
+                <div class="separator"></div>
+
+                <div class="shape-add">
+                    <span>Add shape</span>
+                    <select id="addShape" title="Add a shape to the current glyph" disabled>
+                        <option value="">Choose…</option>
+                        <option value="rectangle">Rectangle</option>
+                        <option value="square">Square</option>
+                        <option value="ellipse">Ellipse</option>
+                        <option value="circle">Circle</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="pentagon">Pentagon</option>
+                        <option value="hexagon">Hexagon</option>
+                        <option value="octagon">Octagon</option>
+                        <option value="star">Star</option>
+                        <option value="polygon">Polygon…</option>
+                    </select>
+                    <div id="polygonPop" class="shape-pop" hidden>
+                        <label for="polygonSides">Sides</label>
+                        <input id="polygonSides" type="number" min="3" max="24" step="1" value="6" />
+                        <button id="polygonAdd" type="button">Add</button>
+                    </div>
+                </div>
 
                 <div class="separator"></div>
 
@@ -54,7 +78,10 @@
                     <div id="empty-state">
                         <h1>ScalarCanvas</h1>
                         <div class="drop">Drop a .ttf file here<br />or click “Open TTF”</div>
-                        <div class="hint">…or click “New” to build a font from a blank canvas.</div>
+                        <div class="hint">
+                            <span>…or</span>
+                            <button id="emptyNewBtn" type="button">New font</button>
+                        </div>
                     </div>
                     <div id="status"></div>
                 </section>
@@ -118,6 +145,18 @@
             </div>
         </div>
 
+        <div id="modal" class="modal" hidden>
+            <div class="modal-backdrop" data-modal-close></div>
+            <div class="modal-panel" role="dialog" aria-modal="true">
+                <h3 id="modalTitle"></h3>
+                <div id="modalMessage" class="modal-message"></div>
+                <div class="modal-actions">
+                    <button id="modalCancel" type="button">Cancel</button>
+                    <button id="modalOk" type="button">OK</button>
+                </div>
+            </div>
+        </div>
+
         <script src="src/core/Point.js"></script>
         <script src="src/core/Contour.js"></script>
         <script src="src/core/Transform.js"></script>
@@ -132,6 +171,7 @@
         <script src="src/render/CanvasRenderer.js"></script>
         <script src="src/editor/EditOps.js"></script>
         <script src="src/editor/Freehand.js"></script>
+        <script src="src/editor/Shapes.js"></script>
         <script src="src/editor/Editor.js"></script>
         <script src="src/main.js"></script>
     </body>
