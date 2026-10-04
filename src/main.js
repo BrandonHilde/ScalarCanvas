@@ -3,11 +3,24 @@ const els = {
     stage: document.getElementById("stage"),
     fileInput: document.getElementById("fileInput"),
     newBtn: document.getElementById("newBtn"),
-    emptyNewBtn: document.getElementById("emptyNewBtn"),
+    emptyCanvasBtn: document.getElementById("emptyCanvasBtn"),
+    emptyFontBtn: document.getElementById("emptyFontBtn"),
     exportBtn: document.getElementById("exportBtn"),
+    saveSvgBtn: document.getElementById("saveSvgBtn"),
+    brandMode: document.getElementById("brandMode"),
     togglePoints: document.getElementById("togglePoints"),
     toggleFill: document.getElementById("toggleFill"),
     toggleMetrics: document.getElementById("toggleMetrics"),
+    toggleGrid: document.getElementById("toggleGrid"),
+    toggleSnap: document.getElementById("toggleSnap"),
+    toggleMirror: document.getElementById("toggleMirror"),
+    canvasW: document.getElementById("canvasW"),
+    canvasH: document.getElementById("canvasH"),
+    canvasStroke: document.getElementById("canvasStroke"),
+    canvasFill: document.getElementById("canvasFill"),
+    canvasLineWidth: document.getElementById("canvasLineWidth"),
+    canvasGridSize: document.getElementById("canvasGridSize"),
+    canvasGridRow: document.getElementById("canvasGridRow"),
     fitBtn: document.getElementById("fitBtn"),
     undoBtn: document.getElementById("undoBtn"),
     redoBtn: document.getElementById("redoBtn"),
@@ -52,16 +65,19 @@ const els = {
 };
 
 const TOOL_HINTS = {
-    edit: "Edit: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes. [ ] change glyph.",
+    edit: "Edit: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes.",
     pen: "Pen: click to add a point, drag to pull curve handles, click the first point to close. Alt breaks the handle. Enter finishes open; Esc cancels.",
     freehand: "Freehand: drag to draw freely and a smooth curve is fitted to the stroke. The contour stays open and unfilled. Esc cancels.",
     metrics: "Metrics: drag the purple advance guide or the sidebearing guide. Edit exact values in the panel.",
     background: "Image: drag the tracing image to move it, drag the bottom-right handle to scale. Load an image or tweak opacity, scale and position in the panel.",
 };
 
+const CANVAS_HINT = "Draw: use Pen or Freehand to draw. Edit moves points. Add shapes from the toolbar. Save SVG exports your artboard.";
+
 const TOOL_ORDER = ["edit", "pen", "freehand", "metrics", "background"];
 
 let font = null;
+let mode = "none";
 const history = new History();
 const renderer = new CanvasRenderer(els.canvas, null, new ViewTransform(0.6, 260, 520));
 const editor = new Editor(null, renderer, history);
@@ -96,28 +112,137 @@ function loadFont(arrayBuffer) {
     setFont(parsed);
 }
 
-function setFont(next) {
+function setModeUI(next) {
+    mode = next;
+    document.body.dataset.mode = next;
+    els.brandMode.textContent =
+        next === "canvas" ? "canvas editor" : next === "font" ? "font editor" : "editor";
+    els.newBtn.title = next === "canvas" ? "Start a new blank canvas" : "Start a new blank font";
+}
+
+function updateGridSnap() {
+    editor.snap = els.toggleSnap.classList.contains("active");
+    editor.gridSize =
+        mode === "canvas" && renderer.showGrid && editor.snap ? renderer.gridSize : 0;
+    els.canvasGridRow.style.display =
+        mode === "canvas" && renderer.showGrid ? "" : "none";
+}
+
+const MIRROR_LABELS = {
+    [MirrorMode.None]: "Mirror: Off",
+    [MirrorMode.Vertical]: "Mirror: V",
+    [MirrorMode.Horizontal]: "Mirror: H",
+    [MirrorMode.Both]: "Mirror: Both",
+};
+
+const MIRROR_ORDER = [MirrorMode.None, MirrorMode.Vertical, MirrorMode.Horizontal, MirrorMode.Both];
+
+function updateMirrorButton() {
+    els.toggleMirror.textContent = MIRROR_LABELS[editor.mirror] || "Mirror: Off";
+    els.toggleMirror.classList.toggle("active", editor.mirror !== MirrorMode.None);
+}
+
+function cycleMirror() {
+    const i = MIRROR_ORDER.indexOf(editor.mirror);
+    editor.setMirror(MIRROR_ORDER[(i + 1) % MIRROR_ORDER.length]);
+    updateMirrorButton();
+    updateStatus();
+}
+
+function configureRenderer(forMode) {
+    editor.setMirror(MirrorMode.None);
+    updateMirrorButton();
+    if (forMode === "canvas") {
+        renderer.showGrid = false;
+        renderer.showMetrics = false;
+        renderer.showAdvance = false;
+        renderer.strokeStyle = els.canvasStroke.value || "#64ffda";
+        renderer.fillStyle = els.canvasFill.value || "#ccd6f6";
+        const lw = parseFloat(els.canvasLineWidth.value);
+        renderer.lineWidth = Number.isFinite(lw) ? lw : 1.5;
+        const gs = parseFloat(els.canvasGridSize.value);
+        renderer.gridSize = Number.isFinite(gs) ? gs : 50;
+        els.toggleGrid.classList.toggle("active", renderer.showGrid);
+        els.toggleSnap.classList.toggle("active", true);
+        els.togglePoints.classList.toggle("active", renderer.showPoints);
+        els.toggleFill.classList.toggle("active", renderer.showFill);
+        updateGridSnap();
+    } else {
+        renderer.showGrid = false;
+        renderer.showMetrics = true;
+        renderer.showAdvance = true;
+        renderer.strokeStyle = "#64ffda";
+        renderer.fillStyle = "#ccd6f6";
+        renderer.lineWidth = 1.5;
+        editor.gridSize = 0;
+        els.toggleMetrics.classList.toggle("active", renderer.showMetrics);
+        els.togglePoints.classList.toggle("active", renderer.showPoints);
+        els.toggleFill.classList.toggle("active", renderer.showFill);
+    }
+}
+
+function syncCanvasControls() {
+    if (!font || !font.canvas) return;
+    if (document.activeElement !== els.canvasW) els.canvasW.value = font.width;
+    if (document.activeElement !== els.canvasH) els.canvasH.value = font.height;
+}
+
+function applyDocument(next, nextMode) {
     font = next;
+    setModeUI(nextMode);
 
     renderer.doc = font;
     els.empty.style.display = "none";
-    els.exportBtn.disabled = false;
+
+    const isFont = nextMode === "font";
+    els.exportBtn.disabled = !isFont;
+    els.saveSvgBtn.disabled = isFont;
     els.fitBtn.disabled = false;
-    els.glyphSearch.disabled = false;
-    els.previewText.disabled = false;
-    els.addGlyphInput.disabled = false;
-    els.addGlyphBtn.disabled = false;
+    els.glyphSearch.disabled = !isFont;
+    els.previewText.disabled = !isFont;
+    els.addGlyphInput.disabled = !isFont;
+    els.addGlyphBtn.disabled = !isFont;
     els.addShape.disabled = false;
 
     editor.setDocument(font);
     history.clear();
-    buildGlyphList("");
+
+    // The stage column changes width between modes (the glyph sidebar is only
+    // present in font mode). Force a reflow, then size the canvas to match so
+    // it can never overflow into the inspector.
+    void document.body.offsetHeight;
+    renderer.resize(els.stage.clientWidth, els.stage.clientHeight);
+    resizePreview();
+
+    if (isFont) {
+        els.glyphSearch.value = "";
+        buildGlyphList("");
+        configureRenderer("font");
+    } else {
+        syncCanvasControls();
+        configureRenderer("canvas");
+    }
+
     renderer.fitToGlyph(editor.glyph);
     redraw();
     updateStatus();
     updateInspector();
+    updateButtons();
     updateBackgroundControls();
-    drawPreview();
+    if (isFont) drawPreview();
+}
+
+function setFont(next) {
+    applyDocument(next, "font");
+}
+
+function setCanvas(doc) {
+    applyDocument(doc, "canvas");
+}
+
+function newCanvas() {
+    const doc = new CanvasDocument(1000, 1000);
+    setCanvas(doc);
 }
 
 function newFont() {
@@ -298,6 +423,16 @@ function updateStatus() {
         return;
     }
     const glyph = editor.glyph;
+    if (mode === "canvas") {
+        els.status.innerHTML =
+            `<span>Canvas <b>${font.width}×${font.height}</b></span>` +
+            `<span>Tool <b>${editor.tool}</b></span>` +
+            `<span>Contours <b>${glyph ? glyph.contours.length : 0}</b></span>` +
+            `<span>Selected <b>${editor.selection.size}</b></span>` +
+            `<span>Mirror <b>${MIRROR_LABELS[editor.mirror].replace("Mirror: ", "")}</b></span>` +
+            `<span>Zoom <b>${(renderer.view.scale * 100).toFixed(0)}%</b></span>`;
+        return;
+    }
     if (!glyph) {
         els.status.innerHTML = `<span>Family <b>${font.familyName}</b></span><span>Glyphs <b>${font.numGlyphs}</b></span>`;
         return;
@@ -366,6 +501,10 @@ function updateInspector() {
 }
 
 function updateHint() {
+    if (mode === "canvas" && editor.tool === "edit") {
+        els.hint.textContent = CANVAS_HINT;
+        return;
+    }
     els.hint.textContent = TOOL_HINTS[editor.tool] || "";
 }
 
@@ -396,6 +535,7 @@ function updateCursor() {
 /* ── preview ────────────────────────────────────────── */
 
 function drawPreview() {
+    if (mode !== "font") return;
     const ctx = els.preview.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     const w = els.preview.clientWidth;
@@ -528,11 +668,15 @@ els.fileInput.addEventListener("change", (e) => {
 });
 
 els.newBtn.addEventListener("click", async () => {
-    if (font && !(await showConfirm("Discard the current font and start a new one?", "New font", "Discard"))) return;
-    newFont();
+    const isCanvas = mode === "canvas";
+    const label = isCanvas ? "New canvas" : "New font";
+    if (font && !(await showConfirm(`Discard the current ${isCanvas ? "canvas" : "font"} and start a new one?`, label, "Discard"))) return;
+    if (isCanvas) newCanvas();
+    else newFont();
 });
 
-els.emptyNewBtn.addEventListener("click", () => newFont());
+els.emptyCanvasBtn.addEventListener("click", () => newCanvas());
+els.emptyFontBtn.addEventListener("click", () => newFont());
 
 els.addGlyphBtn.addEventListener("click", addGlyphFromInput);
 els.addGlyphInput.addEventListener("keydown", (e) => {
@@ -559,6 +703,20 @@ window.addEventListener("drop", (e) => {
     reader.onload = () => loadFont(reader.result);
     reader.readAsArrayBuffer(file);
 });
+
+function exportSVG() {
+    if (!font || !font.canvas || !editor.glyph) return;
+    const svg = glyphToSVG(editor.glyph, {
+        width: font.width,
+        height: font.height,
+        stroke: els.canvasStroke.value || "#64ffda",
+        fill: els.canvasFill.value || "#ccd6f6",
+        lineWidth: parseFloat(els.canvasLineWidth.value) || 0,
+    });
+    downloadSVG(svg, "design.svg");
+}
+
+els.saveSvgBtn.addEventListener("click", exportSVG);
 
 els.exportBtn.addEventListener("click", () => {
     if (!font) return;
@@ -646,6 +804,57 @@ els.toggleMetrics.addEventListener("click", () => {
     renderer.showMetrics = !renderer.showMetrics;
     els.toggleMetrics.classList.toggle("active", renderer.showMetrics);
     redraw();
+});
+
+els.toggleGrid.addEventListener("click", () => {
+    renderer.showGrid = !renderer.showGrid;
+    els.toggleGrid.classList.toggle("active", renderer.showGrid);
+    updateGridSnap();
+    redraw();
+});
+
+els.toggleSnap.addEventListener("click", () => {
+    const active = !els.toggleSnap.classList.contains("active");
+    els.toggleSnap.classList.toggle("active", active);
+    updateGridSnap();
+});
+
+els.toggleMirror.addEventListener("click", cycleMirror);
+
+els.canvasStroke.addEventListener("input", () => {
+    renderer.strokeStyle = els.canvasStroke.value;
+    redraw();
+});
+els.canvasFill.addEventListener("input", () => {
+    renderer.fillStyle = els.canvasFill.value;
+    redraw();
+});
+els.canvasLineWidth.addEventListener("change", () => {
+    const value = parseFloat(els.canvasLineWidth.value);
+    renderer.lineWidth = Number.isFinite(value) ? value : 1.5;
+    els.canvasLineWidth.value = renderer.lineWidth;
+    redraw();
+});
+els.canvasGridSize.addEventListener("change", () => {
+    const value = parseFloat(els.canvasGridSize.value);
+    renderer.gridSize = Number.isFinite(value) ? value : 50;
+    els.canvasGridSize.value = renderer.gridSize;
+    updateGridSnap();
+    redraw();
+});
+els.canvasW.addEventListener("change", () => {
+    if (!font || !font.canvas) return;
+    font.setSize(parseFloat(els.canvasW.value) || 1000, font.height);
+    syncCanvasControls();
+    redraw();
+    updateStatus();
+});
+els.canvasH.addEventListener("change", () => {
+    if (!font || !font.canvas) return;
+    font.setSize(font.width, parseFloat(els.canvasH.value) || 1000);
+    syncCanvasControls();
+    redraw();
+    updateStatus();
 });
 
 els.fitBtn.addEventListener("click", () => {
@@ -816,19 +1025,21 @@ window.addEventListener("keydown", (e) => {
     }
     if (e.key === "Tab") {
         e.preventDefault();
-        const i = TOOL_ORDER.indexOf(editor.tool);
+        const order = mode === "font" ? TOOL_ORDER : TOOL_ORDER.filter((t) => t !== "metrics");
+        const i = order.indexOf(editor.tool);
         const step = e.shiftKey ? -1 : 1;
-        const next = TOOL_ORDER[(i + step + TOOL_ORDER.length) % TOOL_ORDER.length];
+        const next = order[(i + step + order.length) % order.length];
         setTool(next);
         return;
     }
     if (e.key === "e" || e.key === "E") { setTool("edit"); return; }
     if (e.key === "p" || e.key === "P") { setTool("pen"); return; }
     if (e.key === "f" || e.key === "F") { setTool("freehand"); return; }
-    if (e.key === "m" || e.key === "M") { setTool("metrics"); return; }
+    if (mode === "canvas" && (e.key === "m" || e.key === "M")) { cycleMirror(); return; }
+    if (mode === "font" && (e.key === "m" || e.key === "M")) { setTool("metrics"); return; }
     if (e.key === "i" || e.key === "I") { setTool("background"); return; }
-    if (e.key === "[") { selectGlyph((editor.glyphIndex - 1 + font.numGlyphs) % font.numGlyphs); return; }
-    if (e.key === "]") { selectGlyph((editor.glyphIndex + 1) % font.numGlyphs); return; }
+    if (mode === "font" && e.key === "[") { selectGlyph((editor.glyphIndex - 1 + font.numGlyphs) % font.numGlyphs); return; }
+    if (mode === "font" && e.key === "]") { selectGlyph((editor.glyphIndex + 1) % font.numGlyphs); return; }
     if (e.key === "r" || e.key === "R") { editor.reverseContours(); return; }
 
     editor.onKeyDown(e);
@@ -836,6 +1047,7 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("resize", resize);
 
+setModeUI("none");
 resize();
 updateHint();
 updateCursor();

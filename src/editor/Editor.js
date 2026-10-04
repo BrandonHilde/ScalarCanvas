@@ -38,6 +38,13 @@ const EditorTool = Object.freeze({
     Freehand: "freehand",
 });
 
+const MirrorMode = Object.freeze({
+    None: "none",
+    Vertical: "v",
+    Horizontal: "h",
+    Both: "both",
+});
+
 class Editor {
     constructor(document, renderer, history) {
         this.doc = document;
@@ -53,8 +60,14 @@ class Editor {
         this.freehand = null;
         this.snap = true;
         this.gridSize = 0;
+        this.mirror = MirrorMode.None;
         this.onChange = null;
         this.onSelectionChange = null;
+    }
+
+    setMirror(mode) {
+        this.mirror = mode;
+        this.requestRender();
     }
 
     get glyph() {
@@ -135,8 +148,60 @@ class Editor {
         const exclude = excludeKey ? new Set([excludeKey]) : new Set();
         const near = nearestPoint(contours, x, y, this.tolerance(8), exclude);
         if (near) return { x: near.x, y: near.y };
-        if (this.gridSize > 0) return snapToGrid(x, y, this.gridSize);
+        if (this.snap && this.gridSize > 0) return snapToGrid(x, y, this.gridSize);
         return { x, y };
+    }
+
+    // Snap an arbitrary drawing point to the active grid (no-op when snapping
+    // is off or no grid size is configured).
+    snapPoint(x, y) {
+        if (this.snap && this.gridSize > 0) return snapToGrid(x, y, this.gridSize);
+        return { x, y };
+    }
+
+    // ── mirror tool ──────────────────────────────────────
+    // Mirrors newly drawn contours across the document centre, matching the
+    // prototype's mirror aid (Off / Vertical / Horizontal / Both).
+
+    mirrorAxes() {
+        if (!this.doc) return { x: 0, y: 0 };
+        if (this.doc.canvas) return { x: this.doc.width / 2, y: this.doc.height / 2 };
+        const m = this.doc.metrics || {};
+        const glyph = this.glyph;
+        return {
+            x: glyph ? glyph.advanceWidth / 2 : 0,
+            y: ((m.ascender || 0) + (m.descender || 0)) / 2,
+        };
+    }
+
+    // [[mirrorX, mirrorY], ...] variants implied by the current mode.
+    mirrorVariants() {
+        switch (this.mirror) {
+            case MirrorMode.Vertical:
+                return [[true, false]];
+            case MirrorMode.Horizontal:
+                return [[false, true]];
+            case MirrorMode.Both:
+                return [[true, false], [false, true], [true, true]];
+            default:
+                return [];
+        }
+    }
+
+    mirrorContour(contour, mirrorX, mirrorY) {
+        const { x: ax, y: ay } = this.mirrorAxes();
+        const copy = contour.clone();
+        for (const p of copy.points) {
+            if (mirrorX) p.x = 2 * ax - p.x;
+            if (mirrorY) p.y = 2 * ay - p.y;
+        }
+        return copy;
+    }
+
+    addMirrors(glyph, contour) {
+        for (const [mx, my] of this.mirrorVariants()) {
+            glyph.contours.push(this.mirrorContour(contour, mx, my));
+        }
     }
 
     // ── mouse input ──────────────────────────────────────
@@ -152,7 +217,7 @@ class Editor {
         this.pointer = p;
 
         if (this.tool === EditorTool.Pen) {
-            this.penDown(p, alt);
+            this.penDown(this.snapPoint(p.x, p.y), alt);
             return;
         }
         if (this.tool === EditorTool.Metrics) {
@@ -164,7 +229,7 @@ class Editor {
             return;
         }
         if (this.tool === EditorTool.Freehand) {
-            this.freehandDown(p);
+            this.freehandDown(this.snapPoint(p.x, p.y));
             return;
         }
 
@@ -236,7 +301,7 @@ class Editor {
         }
 
         if (drag && drag.type === "freehand") {
-            this.freehandMove(p);
+            this.freehandMove(this.snapPoint(p.x, p.y));
             return;
         }
 
@@ -334,8 +399,9 @@ class Editor {
 
     penDown(p, alt) {
         if (!this.glyph) return;
+        const q = this.snapPoint(p.x, p.y);
         if (!this.pen || this.pen.nodes.length === 0) {
-            this.pen = { nodes: [{ x: p.x, y: p.y, in: null, out: null }] };
+            this.pen = { nodes: [{ x: q.x, y: q.y, in: null, out: null }] };
             this.drag = { type: "pen", nodeIndex: 0 };
             this.requestRender();
             return;
@@ -344,13 +410,13 @@ class Editor {
         const first = this.pen.nodes[0];
         if (
             this.pen.nodes.length >= 2 &&
-            Math.hypot(p.x - first.x, p.y - first.y) <= this.tolerance(10)
+            Math.hypot(q.x - first.x, q.y - first.y) <= this.tolerance(10)
         ) {
             this.finishPen(true);
             return;
         }
 
-        this.pen.nodes.push({ x: p.x, y: p.y, in: null, out: null });
+        this.pen.nodes.push({ x: q.x, y: q.y, in: null, out: null });
         this.drag = { type: "pen", nodeIndex: this.pen.nodes.length - 1 };
         this.requestRender();
     }
@@ -364,6 +430,7 @@ class Editor {
         const glyph = this.glyph;
         const before = glyph.clone();
         glyph.contours.push(contour);
+        this.addMirrors(glyph, contour);
         const ci = glyph.contours.length - 1;
         this.pen = null;
         this.drag = null;
@@ -416,6 +483,7 @@ class Editor {
 
         const before = glyph.clone();
         glyph.contours.push(contour);
+        this.addMirrors(glyph, contour);
         this.selection = new Set();
         this.commit(before, "freehand");
     }
@@ -443,10 +511,11 @@ class Editor {
         if (!contour) return;
 
         const before = glyph.clone();
+        const ci = glyph.contours.length;
         glyph.contours.push(contour);
         glyph.correctDirection();
+        this.addMirrors(glyph, contour);
 
-        const ci = glyph.contours.length - 1;
         this.selection = new Set();
         for (let pi = 0; pi < glyph.contours[ci].points.length; pi++) {
             this.selection.add(`${ci}:${pi}`);
@@ -635,6 +704,32 @@ class Editor {
         if (this.freehand) this.drawFreehand(ctx, r);
         if (this.drag && this.drag.type === "marquee") this.drawMarquee(ctx, r);
         if (this.tool === EditorTool.Background) this.drawBackgroundOverlay(ctx, r);
+        if (this.mirror !== MirrorMode.None) this.drawMirrorAxes(ctx, r);
+    }
+
+    drawMirrorAxes(ctx, r) {
+        const { x, y } = this.mirrorAxes();
+        const w = r.canvas.width / r.dpr;
+        const h = r.canvas.height / r.dpr;
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = "rgba(199, 146, 234, 0.8)";
+        ctx.lineWidth = 1;
+        if (this.mirror === MirrorMode.Vertical || this.mirror === MirrorMode.Both) {
+            const sx = r.sx(x);
+            ctx.beginPath();
+            ctx.moveTo(sx, 0);
+            ctx.lineTo(sx, h);
+            ctx.stroke();
+        }
+        if (this.mirror === MirrorMode.Horizontal || this.mirror === MirrorMode.Both) {
+            const sy = r.sy(y);
+            ctx.beginPath();
+            ctx.moveTo(0, sy);
+            ctx.lineTo(w, sy);
+            ctx.stroke();
+        }
+        ctx.restore();
     }
 
     drawFreehand(ctx, r) {
@@ -643,10 +738,14 @@ class Editor {
             closed: false,
         });
         if (!contour) return;
-        r.pathContours([contour]);
         ctx.strokeStyle = "rgba(130, 170, 255, 0.9)";
         ctx.lineWidth = 1.5;
+        r.pathContours([contour]);
         ctx.stroke();
+        for (const [mx, my] of this.mirrorVariants()) {
+            r.pathContours([this.mirrorContour(contour, mx, my)]);
+            ctx.stroke();
+        }
     }
 
     drawBackgroundOverlay(ctx, r) {
@@ -691,10 +790,14 @@ class Editor {
 
         if (nodes.length >= 2) {
             const preview = nodesToContour(nodes, false);
-            r.pathContours([preview]);
             ctx.strokeStyle = "rgba(100, 255, 218, 0.7)";
             ctx.lineWidth = 1.5;
+            r.pathContours([preview]);
             ctx.stroke();
+            for (const [mx, my] of this.mirrorVariants()) {
+                r.pathContours([this.mirrorContour(preview, mx, my)]);
+                ctx.stroke();
+            }
         }
 
         // rubber band to pointer

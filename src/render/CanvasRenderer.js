@@ -21,6 +21,12 @@ class CanvasRenderer {
         this.showPoints = true;
         this.showMetrics = true;
         this.showFill = true;
+        this.showAdvance = true;
+        this.showGrid = false;
+        this.gridSize = 50;
+        this.strokeStyle = COLORS.outline;
+        this.fillStyle = COLORS.fill;
+        this.lineWidth = 1.5;
         this.background = null;
         this.dpr = window.devicePixelRatio || 1;
     }
@@ -86,6 +92,9 @@ class CanvasRenderer {
             return;
         }
 
+        if (this.showGrid) this.drawGrid();
+        this.drawArtboard();
+
         if (this.showMetrics) this.drawMetrics();
 
         const contours = glyph.getOutlineContours((i) => this.doc.resolveGlyph(i));
@@ -94,16 +103,16 @@ class CanvasRenderer {
             const closed = contours.filter((c) => c.closed);
             if (closed.length) {
                 this.pathContours(closed);
-                this.ctx.fillStyle = COLORS.fill;
+                this.ctx.fillStyle = this.fillStyle;
                 this.ctx.fill("nonzero");
             }
         }
         this.pathContours(contours);
-        this.ctx.strokeStyle = COLORS.outline;
-        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeStyle = this.strokeStyle;
+        this.ctx.lineWidth = this.lineWidth;
         this.ctx.stroke();
 
-        this.drawAdvance(glyph);
+        if (this.showAdvance) this.drawAdvance(glyph);
 
         if (this.showPoints && !glyph.isComposite) {
             for (const contour of glyph.contours) this.drawContourPoints(contour);
@@ -143,6 +152,53 @@ class CanvasRenderer {
         ctx.globalAlpha = bg.opacity;
         ctx.imageSmoothingEnabled = bg.smoothing !== false;
         ctx.drawImage(bg.image, x, y, w, h);
+        ctx.restore();
+    }
+
+    drawGrid() {
+        const size = this.gridSize;
+        if (!(size > 0)) return;
+        const px = size * this.view.scale;
+        if (px < 4) return;
+
+        const { ctx } = this;
+        const w = this.canvas.width / this.dpr;
+        const h = this.canvas.height / this.dpr;
+        const x0 = this.view.toFontX(0);
+        const x1 = this.view.toFontX(w);
+        const y0 = this.view.toFontY(h);
+        const y1 = this.view.toFontY(0);
+
+        ctx.save();
+        ctx.strokeStyle = COLORS.metric;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = Math.floor(x0 / size) * size; x <= x1; x += size) {
+            const sx = Math.round(this.sx(x)) + 0.5;
+            ctx.moveTo(sx, 0);
+            ctx.lineTo(sx, h);
+        }
+        for (let y = Math.floor(y0 / size) * size; y <= y1; y += size) {
+            const sy = Math.round(this.sy(y)) + 0.5;
+            ctx.moveTo(0, sy);
+            ctx.lineTo(w, sy);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    drawArtboard() {
+        const doc = this.doc;
+        if (!doc || !doc.canvas) return;
+        const { ctx } = this;
+        const x0 = this.sx(0);
+        const y0 = this.sy(doc.height);
+        const x1 = this.sx(doc.width);
+        const y1 = this.sy(0);
+        ctx.save();
+        ctx.strokeStyle = COLORS.metricText;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
         ctx.restore();
     }
 
@@ -246,15 +302,18 @@ class CanvasRenderer {
 
     fitToGlyph(glyph, padding = 80) {
         if (!glyph) return;
-        const box = glyph.getBoundingBox((i) => this.doc.resolveGlyph(i));
+        const isCanvas = this.doc && this.doc.canvas;
+        const box = isCanvas
+            ? { xMin: 0, yMin: 0, xMax: this.doc.width, yMax: this.doc.height, width: this.doc.width, height: this.doc.height }
+            : glyph.getBoundingBox((i) => this.doc.resolveGlyph(i));
         if (!box || box.width === 0 || box.height === 0) {
             this.view = new ViewTransform(0.5, this.canvas.width / (2 * this.dpr), this.canvas.height / (2 * this.dpr));
             return;
         }
         const w = this.canvas.width / this.dpr;
         const h = this.canvas.height / this.dpr;
-        const asc = this.doc ? this.doc.metrics.ascender : box.yMax;
-        const desc = this.doc ? this.doc.metrics.descender : box.yMin;
+        const asc = isCanvas ? this.doc.height : (this.doc ? this.doc.metrics.ascender : box.yMax);
+        const desc = isCanvas ? 0 : (this.doc ? this.doc.metrics.descender : box.yMin);
         const contentH = Math.max(1, asc - desc);
 
         const scale = Math.min(

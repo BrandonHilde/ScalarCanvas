@@ -9,19 +9,20 @@
     <body>
         <div id="app">
             <header>
-                <div class="brand">ScalarCanvas <small>font editor</small></div>
+                <div class="brand">ScalarCanvas <small id="brandMode">editor</small></div>
 
-                <button id="newBtn" title="Start a new blank font">New</button>
-                <label class="btn" for="fileInput">Open TTF</label>
-                <input id="fileInput" type="file" accept=".ttf,font/ttf" />
-                <button id="exportBtn" disabled>Export TTF</button>
+                <button id="newBtn" title="Start a new document">New</button>
+                <label class="btn" for="fileInput" data-mode="font">Open TTF</label>
+                <input id="fileInput" type="file" accept=".ttf,font/ttf" data-mode="font" />
+                <button id="exportBtn" disabled data-mode="font">Export TTF</button>
+                <button id="saveSvgBtn" disabled data-mode="canvas">Save SVG</button>
 
                 <div class="separator"></div>
 
                 <button class="tool" data-tool="edit" title="Edit tool (E): select, move, add, delete points">Edit</button>
                 <button class="tool" data-tool="pen" title="Pen tool (P): draw new contours">Pen</button>
                 <button class="tool active" data-tool="freehand" title="Freehand tool (F): draw freely and fit a smooth curve">Freehand</button>
-                <button class="tool" data-tool="metrics" title="Metrics tool (M): drag sidebearings & advance">Metrics</button>
+                <button class="tool" data-tool="metrics" title="Metrics tool (M): drag sidebearings & advance" data-mode="font">Metrics</button>
                 <button class="tool" data-tool="background" title="Image tool (I): move &amp; scale the tracing image">Image</button>
 
                 <div class="separator"></div>
@@ -57,12 +58,15 @@
 
                 <button id="togglePoints" class="active" title="Toggle points">Points</button>
                 <button id="toggleFill" class="active" title="Toggle fill">Fill</button>
-                <button id="toggleMetrics" class="active" title="Toggle metric guides">Guides</button>
-                <button id="fitBtn" disabled title="Fit glyph">Fit</button>
+                <button id="toggleMetrics" class="active" title="Toggle metric guides" data-mode="font">Guides</button>
+                <button id="toggleGrid" title="Toggle grid" data-mode="canvas">Grid</button>
+                <button id="toggleSnap" class="active" title="Snap drawing to grid" data-mode="canvas">Snap</button>
+                <button id="toggleMirror" title="Cycle mirror: Off → Vertical → Horizontal → Both (M)" data-mode="canvas">Mirror: Off</button>
+                <button id="fitBtn" disabled title="Fit view">Fit</button>
             </header>
 
             <main>
-                <aside id="sidebar">
+                <aside id="sidebar" data-mode="font">
                     <div class="search">
                         <input id="glyphSearch" type="text" placeholder="Search glyphs…" disabled />
                     </div>
@@ -79,28 +83,39 @@
                         <h1>ScalarCanvas</h1>
                         <div class="drop">Drop a .ttf file here<br />or click “Open TTF”</div>
                         <div class="hint">
-                            <span>…or</span>
-                            <button id="emptyNewBtn" type="button">New font</button>
+                            <span>…or start with</span>
+                            <button id="emptyCanvasBtn" type="button">Create Blank Canvas</button>
+                            <button id="emptyFontBtn" type="button">Create Font</button>
                         </div>
                     </div>
                     <div id="status"></div>
                 </section>
 
                 <aside id="inspector">
-                    <div class="insp-section">
+                    <div class="insp-section" data-mode="canvas">
+                        <h4>Canvas</h4>
+                        <div class="form-row"><label>Width</label><input id="canvasW" type="number" min="1" step="1" value="1000" /></div>
+                        <div class="form-row"><label>Height</label><input id="canvasH" type="number" min="1" step="1" value="1000" /></div>
+                        <div class="form-row"><label>Stroke</label><input id="canvasStroke" type="color" value="#64ffda" /></div>
+                        <div class="form-row"><label>Fill</label><input id="canvasFill" type="color" value="#ccd6f6" /></div>
+                        <div class="form-row"><label>Line</label><input id="canvasLineWidth" type="number" min="0" step="0.5" value="1.5" /></div>
+                        <div class="form-row" id="canvasGridRow"><label>Grid</label><input id="canvasGridSize" type="number" min="0" step="1" value="50" /></div>
+                    </div>
+
+                    <div class="insp-section" data-mode="font">
                         <h4>Glyph</h4>
                         <div class="form-row"><label>Name</label><input id="insp-name" type="text" readonly /></div>
                         <div class="form-row"><label>Unicode</label><input id="insp-unicode" type="text" readonly /></div>
                     </div>
 
-                    <div class="insp-section">
+                    <div class="insp-section" data-mode="font">
                         <h4>Spacing</h4>
                         <div class="form-row"><label>Advance</label><input id="insp-advance" type="number" disabled /></div>
                         <div class="form-row"><label>LSB</label><input id="insp-lsb" type="number" disabled /></div>
                         <div class="form-row"><label>RSB</label><input id="insp-rsb" type="number" disabled /></div>
                     </div>
 
-                    <div class="insp-section">
+                    <div class="insp-section" data-mode="font">
                         <h4>Font metrics</h4>
                         <div class="form-row"><label>Ascender</label><input id="insp-ascender" type="number" disabled /></div>
                         <div class="form-row"><label>Descender</label><input id="insp-descender" type="number" disabled /></div>
@@ -136,7 +151,7 @@
                 </aside>
             </main>
 
-            <div id="preview-bar">
+            <div id="preview-bar" data-mode="font">
                 <div class="preview-head">
                     <span>Preview</span>
                     <input id="previewText" type="text" value="The quick brown fox" disabled />
@@ -173,6 +188,8 @@
         <script src="src/editor/Freehand.js"></script>
         <script src="src/editor/Shapes.js"></script>
         <script src="src/editor/Editor.js"></script>
+        <script src="src/canvas/CanvasDocument.js"></script>
+        <script src="src/canvas/SVGWriter.js"></script>
         <script src="src/main.js"></script>
     </body>
 </html>

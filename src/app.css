@@ -295,6 +295,7 @@ main {
     position: relative;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
     background: var(--panel);
 }
 
@@ -401,6 +402,8 @@ main {
 
 /* Inspector */
 #inspector {
+    position: relative;
+    z-index: 1;
     background: var(--panel-2);
     border-left: 1px solid var(--border);
     overflow-y: auto;
@@ -538,5 +541,65 @@ main {
 
 #modalCancel[hidden] {
     display: none;
+}
+
+/* Mode visibility: the header, panels and tools carry data-mode markers so a
+   single page can host both the font editor and the general SVG canvas. */
+body[data-mode="font"] [data-mode="canvas"] {
+    display: none;
+}
+
+body[data-mode="canvas"] [data-mode="font"] {
+    display: none;
+}
+
+body[data-mode="canvas"] #app {
+    grid-template-rows: 44px 1fr;
+}
+
+body[data-mode="canvas"] main {
+    grid-template-columns: 1fr 270px;
+}
+
+body[data-mode="canvas"] #sidebar,
+body[data-mode="canvas"] #preview-bar {
+    display: none;
+}
+
+body[data-mode="none"] #app {
+    grid-template-rows: 44px 1fr;
+}
+
+body[data-mode="none"] main {
+    grid-template-columns: 1fr;
+}
+
+body[data-mode="none"] #sidebar,
+body[data-mode="none"] #inspector,
+body[data-mode="none"] #preview-bar,
+body[data-mode="none"] header [data-mode],
+body[data-mode="none"] header .tool,
+body[data-mode="none"] header .shape-add,
+body[data-mode="none"] header .separator,
+body[data-mode="none"] #newBtn,
+body[data-mode="none"] #undoBtn,
+body[data-mode="none"] #redoBtn,
+body[data-mode="none"] #togglePoints,
+body[data-mode="none"] #toggleFill,
+body[data-mode="none"] #toggleMetrics,
+body[data-mode="none"] #toggleGrid,
+body[data-mode="none"] #fitBtn {
+    display: none;
+}
+
+#inspector input[type="color"] {
+    flex: 1;
+    min-width: 0;
+    height: 26px;
+    padding: 2px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
 }
 
