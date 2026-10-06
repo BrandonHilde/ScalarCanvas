@@ -99,7 +99,9 @@ class CanvasRenderer {
 
         const contours = glyph.getOutlineContours((i) => this.doc.resolveGlyph(i));
 
-        if (this.showFill) {
+        if (this.doc && this.doc.canvas) {
+            this.drawStyledContours(contours);
+        } else if (this.showFill) {
             const closed = contours.filter((c) => c.closed);
             if (closed.length) {
                 this.pathContours(closed);
@@ -107,10 +109,12 @@ class CanvasRenderer {
                 this.ctx.fill("nonzero");
             }
         }
-        this.pathContours(contours);
-        this.ctx.strokeStyle = this.strokeStyle;
-        this.ctx.lineWidth = this.lineWidth;
-        this.ctx.stroke();
+        if (!(this.doc && this.doc.canvas)) {
+            this.pathContours(contours);
+            this.ctx.strokeStyle = this.strokeStyle;
+            this.ctx.lineWidth = this.lineWidth;
+            this.ctx.stroke();
+        }
 
         if (this.showAdvance) this.drawAdvance(glyph);
 
@@ -119,6 +123,48 @@ class CanvasRenderer {
         }
 
         if (glyph.isComposite) this.drawComponents(glyph);
+    }
+
+    // Effective paint for a contour on the drawing canvas: its own style, with
+    // the renderer's current colours as defaults.
+    contourStyle(contour) {
+        return {
+            stroke: this.strokeStyle,
+            fill: this.fillStyle,
+            width: this.lineWidth,
+            ...(contour.style || {}),
+        };
+    }
+
+    // Canvas mode: every contour carries its own paint, and line widths are in
+    // document units so the screen matches the exported SVG at any zoom.
+    drawStyledContours(contours) {
+        const { ctx } = this;
+        ctx.save();
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        for (const contour of contours) {
+            const style = this.contourStyle(contour);
+            const width = Number(style.width) || 0;
+            const hasStroke = !!style.stroke && width > 0;
+            const filled = this.showFill && contour.closed && !!style.fill;
+            this.pathContours([contour]);
+            if (filled) {
+                ctx.fillStyle = style.fill;
+                ctx.fill("nonzero");
+            }
+            if (hasStroke) {
+                ctx.strokeStyle = style.stroke;
+                ctx.lineWidth = Math.max(0.75, width * this.view.scale);
+                ctx.stroke();
+            } else if (!filled) {
+                // Keep unfilled, unstroked shapes visible as a hairline.
+                ctx.strokeStyle = style.fill || style.stroke || COLORS.outline;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
     }
 
     drawOrigin() {

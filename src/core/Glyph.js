@@ -160,10 +160,11 @@ class Glyph {
             advanceWidth: this.advanceWidth,
             leftSideBearing: this.leftSideBearing,
             unicodes: this.unicodes.slice(),
-            contours: this.contours.map((c) => ({
-                closed: c.closed,
-                points: c.toArray(),
-            })),
+            contours: this.contours.map((c) => {
+                const out = { closed: c.closed, points: c.toArray() };
+                if (c.style) out.style = { ...c.style };
+                return out;
+            }),
             components: this.components.map((comp) => ({
                 glyphIndex: comp.glyphIndex,
                 transform: [comp.transform.a, comp.transform.b, comp.transform.c, comp.transform.d, comp.transform.e, comp.transform.f],
@@ -172,5 +173,31 @@ class Glyph {
                 arg2: comp.arg2,
             })),
         };
+    }
+
+    static fromJSON(data) {
+        const g = new Glyph(data.name || "");
+        g.advanceWidth = Number(data.advanceWidth) || 0;
+        g.leftSideBearing = Number(data.leftSideBearing) || 0;
+        g.unicodes = Array.isArray(data.unicodes) ? data.unicodes.slice() : [];
+        g.contours = (data.contours || []).map((c) => {
+            const contour = new Contour(
+                (c.points || []).map((p) => new Point(p.x, p.y, p.type, p.curve, !!p.smooth)),
+                c.closed !== false
+            );
+            if (c.style) contour.style = { ...c.style };
+            return contour;
+        });
+        g.components = (data.components || []).map((comp) => {
+            const t = comp.transform || [1, 0, 0, 1, 0, 0];
+            return new GlyphComponent(
+                comp.glyphIndex,
+                new AffineTransform(t[0], t[1], t[2], t[3], t[4], t[5]),
+                comp.flags || 0,
+                comp.arg1 || 0,
+                comp.arg2 || 0
+            );
+        });
+        return g;
     }
 }

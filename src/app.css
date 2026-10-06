@@ -603,3 +603,179 @@ body[data-mode="none"] #fitBtn {
     cursor: pointer;
 }
 
+
+/* Inspector rows lay out label + control on one line. */
+.insp-section .form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.insp-section .form-row label {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+#inspector input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+    margin: 0;
+}
+
+.insp-note {
+    margin-top: 8px;
+    color: var(--faint);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.segmented {
+    display: flex;
+    flex: 1;
+}
+
+.segmented button {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 0;
+}
+
+.segmented button:first-child {
+    border-radius: 4px 0 0 4px;
+}
+
+.segmented button:last-child {
+    border-radius: 0 4px 4px 0;
+    border-left: none;
+}
+
+/* Character-set picker under the add-glyph field. */
+#sidebar .add-set {
+    padding: 0 8px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+#sidebar .add-set select {
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: inherit;
+    padding: 5px 7px;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+#sidebar .add-set select:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Glyph thumbnails */
+.glyph-item .gthumb {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+}
+
+.glyph-item.selected .gthumb {
+    border-color: #3a6a5e;
+}
+
+.glyph-item .gid {
+    width: 36px;
+}
+
+.glyph-item .gmeta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.glyph-item .gname {
+    flex: none;
+}
+
+#empty-state .restore {
+    margin-top: 6px;
+    border-color: #3a6a5e;
+    color: var(--accent);
+}
+
+#empty-state .restore[hidden] {
+    display: none;
+}
+
+body[data-mode="none"] #saveProjectBtn {
+    display: none;
+}
+
+/* Let pens and touch draw instead of scrolling the page. */
+#canvas {
+    touch-action: none;
+}
+
+#canvas.panning {
+    cursor: grab;
+}
+
+.toast {
+    position: absolute;
+    left: 50%;
+    bottom: 40px;
+    transform: translate(-50%, 8px);
+    padding: 7px 14px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s, transform 0.18s;
+    z-index: 10;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+#preview {
+    cursor: pointer;
+}
+
+/* A toolbar wider than the window scrolls instead of widening the layout
+   (which would push the inspector off-screen). */
+#app {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+header {
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+header > * {
+    flex-shrink: 0;
+}
+
+header {
+    gap: 6px;
+}
+
+header .separator {
+    margin: 0 2px;
+}

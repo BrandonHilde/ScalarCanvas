@@ -61,6 +61,15 @@ class Editor {
         this.snap = true;
         this.gridSize = 0;
         this.mirror = MirrorMode.None;
+        // Freehand settings: "line" fits a centre-line curve, "brush" builds a
+        // filled outline of a (pressure-sensitive) brush of `brushSize` units.
+        this.freehandMode = "line";
+        this.brushSize = 80;
+        this.smoothing = 3;
+        this.usePressure = true;
+        // Paint applied to new contours on the drawing canvas.
+        this.paint = null;
+        this.clipboard = null;
         this.onChange = null;
         this.onSelectionChange = null;
     }
@@ -229,7 +238,7 @@ class Editor {
             return;
         }
         if (this.tool === EditorTool.Freehand) {
-            this.freehandDown(this.snapPoint(p.x, p.y));
+            this.freehandDown(p, this.pressureOf(ev));
             return;
         }
 
@@ -301,7 +310,7 @@ class Editor {
         }
 
         if (drag && drag.type === "freehand") {
-            this.freehandMove(this.snapPoint(p.x, p.y));
+            this.freehandMove(p, this.pressureOf(ev));
             return;
         }
 
@@ -427,6 +436,7 @@ class Editor {
             return;
         }
         const contour = nodesToContour(this.pen.nodes, !!closed);
+        this.applyPaint(contour);
         const glyph = this.glyph;
         const before = glyph.clone();
         glyph.contours.push(contour);
@@ -440,23 +450,51 @@ class Editor {
 
     // ── freehand tool ────────────────────────────────────
 
-    freehandDown(p) {
+    // Brush width multiplier from a pointer event. Only pens report useful
+    // pressure; mice and touch always draw at full size.
+    pressureOf(ev) {
+        if (!this.usePressure || !ev || ev.pointerType !== "pen") return 1;
+        const p = ev.pressure;
+        return p > 0 ? 0.15 + 0.85 * Math.min(1, p) : 1;
+    }
+
+    // Fit tolerance in font units (the smoothing setting is in screen pixels,
+    // so strokes look equally smooth at every zoom level).
+    freehandTolerance() {
+        return this.tolerance(Math.max(0.5, this.smoothing));
+    }
+
+    freehandDown(p, pressure = 1) {
         const glyph = this.glyph;
         if (!glyph || glyph.isComposite) return;
-        this.freehand = { points: [{ x: p.x, y: p.y }] };
+        this.freehand = { points: [{ x: p.x, y: p.y, w: this.brushSize * pressure }] };
         this.drag = { type: "freehand" };
         this.selection.clear();
         this.requestRender();
     }
 
-    freehandMove(p) {
+    freehandMove(p, pressure = 1) {
         if (!this.freehand) return;
         const points = this.freehand.points;
         const last = points[points.length - 1];
-        if (Math.hypot(p.x - last.x, p.y - last.y) >= this.tolerance(2)) {
-            points.push({ x: p.x, y: p.y });
+        if (Math.hypot(p.x - last.x, p.y - last.y) >= this.tolerance(1.5)) {
+            points.push({ x: p.x, y: p.y, w: this.brushSize * pressure });
         }
         this.requestRender();
+    }
+
+    buildFreehandContour(points) {
+        const tolerance = this.freehandTolerance();
+        if (this.freehandMode === "brush") {
+            const contour = fitBrushStroke(points, { tolerance });
+            if (contour) this.applyPaint(contour, "brush");
+            return contour;
+        }
+        if (points.length < 2) return null;
+        const closed = strokeLooksClosed(points, this.tolerance(12));
+        const contour = fitFreehandStroke(points, { tolerance, closed });
+        if (contour) this.applyPaint(contour, "line");
+        return contour;
     }
 
     finishFreehand() {
@@ -465,17 +503,12 @@ class Editor {
         this.freehand = null;
         this.drag = null;
 
-        if (!glyph || !stroke || stroke.points.length < 2) {
+        if (!glyph || !stroke) {
             this.requestRender();
             return;
         }
 
-        const pts = stroke.points;
-
-        const contour = fitFreehandStroke(pts, {
-            segmentLength: this.tolerance(70),
-            closed: false,
-        });
+        const contour = this.buildFreehandContour(stroke.points);
         if (!contour) {
             this.requestRender();
             return;
@@ -486,6 +519,20 @@ class Editor {
         this.addMirrors(glyph, contour);
         this.selection = new Set();
         this.commit(before, "freehand");
+    }
+
+    // Stamp the current canvas paint onto a new contour. Font glyphs have no
+    // per-contour paint, so this is a no-op outside the drawing canvas.
+    applyPaint(contour, kind = "shape") {
+        if (!this.doc || !this.doc.canvas || !this.paint) return;
+        const paint = this.paint;
+        if (kind === "brush") {
+            contour.style = { stroke: null, fill: paint.stroke, width: 0 };
+        } else if (kind === "line") {
+            contour.style = { stroke: paint.stroke, fill: null, width: paint.width };
+        } else {
+            contour.style = { stroke: paint.stroke, fill: paint.fill, width: paint.width };
+        }
     }
 
     // ── add shape ────────────────────────────────────────
@@ -510,10 +557,11 @@ class Editor {
         const contour = createShapeContour(kind, this.defaultShapeBox(), sides);
         if (!contour) return;
 
+        this.applyPaint(contour);
         const before = glyph.clone();
         const ci = glyph.contours.length;
         glyph.contours.push(contour);
-        glyph.correctDirection();
+        if (!contour.isClockwise()) contour.reverse();
         this.addMirrors(glyph, contour);
 
         this.selection = new Set();
@@ -676,6 +724,129 @@ class Editor {
         this.commit(before, "toggle closed");
     }
 
+    // Indices of contours touched by the selection (all contours when empty).
+    selectedContourIndices(fallbackToAll = true) {
+        const glyph = this.glyph;
+        if (!glyph) return [];
+        if (this.selection.size === 0) return fallbackToAll ? glyph.contours.map((_, i) => i) : [];
+        const set = new Set();
+        for (const key of this.selection) {
+            const { ci } = parseKey(key);
+            if (glyph.contours[ci]) set.add(ci);
+        }
+        return [...set].sort((a, b) => a - b);
+    }
+
+    selectAll() {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite) return;
+        this.selection = new Set();
+        glyph.contours.forEach((c, ci) => c.points.forEach((_, pi) => this.selection.add(`${ci}:${pi}`)));
+        this.requestRender();
+        this.emitSelection();
+    }
+
+    copySelection() {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite) return 0;
+        const indices = this.selectedContourIndices();
+        if (!indices.length) return 0;
+        this.clipboard = indices.map((ci) => glyph.contours[ci].clone());
+        return indices.length;
+    }
+
+    cutSelection() {
+        const glyph = this.glyph;
+        const indices = this.selectedContourIndices();
+        if (!this.copySelection()) return 0;
+        const before = glyph.clone();
+        for (const ci of indices.slice().reverse()) glyph.contours.splice(ci, 1);
+        this.selection.clear();
+        this.commit(before, "cut");
+        return indices.length;
+    }
+
+    // Paste the clipboard into the current glyph, optionally offset, and
+    // select the pasted points so they can be moved straight away.
+    paste(offset = { x: 0, y: 0 }) {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite || !this.clipboard || !this.clipboard.length) return 0;
+        const before = glyph.clone();
+        const start = glyph.contours.length;
+        for (const contour of this.clipboard) {
+            const copy = contour.clone();
+            for (const p of copy.points) {
+                p.x += offset.x;
+                p.y += offset.y;
+            }
+            if (!this.doc.canvas) delete copy.style;
+            glyph.contours.push(copy);
+        }
+        this.selection = new Set();
+        for (let ci = start; ci < glyph.contours.length; ci++) {
+            glyph.contours[ci].points.forEach((_, pi) => this.selection.add(`${ci}:${pi}`));
+        }
+        this.commit(before, "paste");
+        return glyph.contours.length - start;
+    }
+
+    duplicateSelection() {
+        if (!this.copySelection()) return 0;
+        const d = Math.round(this.tolerance(16));
+        return this.paste({ x: d, y: -d });
+    }
+
+    // Normalise winding to the TrueType convention (outer clockwise, holes
+    // counter-clockwise) so counters in letters like "o" are cut out.
+    correctDirection() {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite || !glyph.contours.length) return;
+        const before = glyph.clone();
+        glyph.correctDirection();
+        this.commit(before, "correct direction");
+    }
+
+    // Canvas mode: repaint the contours touched by the selection. Brush
+    // outlines are painted by their fill, so "stroke colour" recolours their
+    // ink and line width does not apply to them.
+    applyStyleToSelection(partial) {
+        const glyph = this.glyph;
+        if (!glyph || !this.doc || !this.doc.canvas || this.selection.size === 0) return false;
+        const before = glyph.clone();
+        for (const ci of this.selectedContourIndices(false)) {
+            const contour = glyph.contours[ci];
+            const current = contour.style || {};
+            const isBrush = !!contour.style && current.stroke == null && !!current.fill;
+            const style = { ...current };
+            if ("stroke" in partial) {
+                if (isBrush) style.fill = partial.stroke;
+                else style.stroke = partial.stroke;
+            }
+            if ("fill" in partial && !isBrush && current.fill !== null) style.fill = partial.fill;
+            if ("width" in partial && !isBrush) style.width = partial.width;
+            contour.style = style;
+        }
+        this.commit(before, "restyle");
+        return true;
+    }
+
+    renameGlyph(name) {
+        const glyph = this.glyph;
+        const clean = String(name || "").trim();
+        if (!glyph || !clean || clean === glyph.name) return;
+        const before = glyph.clone();
+        glyph.name = clean;
+        this.commit(before, "rename glyph");
+    }
+
+    setUnicodes(unicodes) {
+        const glyph = this.glyph;
+        if (!glyph) return;
+        const before = glyph.clone();
+        glyph.unicodes = unicodes.slice();
+        this.commit(before, "unicode");
+    }
+
     setAdvanceWidth(value) {
         const glyph = this.glyph;
         if (!glyph) return;
@@ -732,20 +903,44 @@ class Editor {
         ctx.restore();
     }
 
+    // Live stroke preview. The raw samples are drawn (no curve fitting) so the
+    // preview stays responsive on long strokes; fitting happens on release.
     drawFreehand(ctx, r) {
-        const contour = fitFreehandStroke(this.freehand.points, {
-            segmentLength: this.tolerance(70),
-            closed: false,
-        });
-        if (!contour) return;
-        ctx.strokeStyle = "rgba(130, 170, 255, 0.9)";
-        ctx.lineWidth = 1.5;
-        r.pathContours([contour]);
-        ctx.stroke();
-        for (const [mx, my] of this.mirrorVariants()) {
-            r.pathContours([this.mirrorContour(contour, mx, my)]);
-            ctx.stroke();
+        const points = this.freehand.points;
+        if (!points.length) return;
+        const variants = [[false, false], ...this.mirrorVariants()];
+        const { x: ax, y: ay } = this.mirrorAxes();
+        const map = (p, mx, my) => ({ x: mx ? 2 * ax - p.x : p.x, y: my ? 2 * ay - p.y : p.y });
+        const paint = this.doc && this.doc.canvas && this.paint ? this.paint : null;
+        const trace = (pts, mx, my) => {
+            ctx.beginPath();
+            pts.forEach((p, i) => {
+                const q = map(p, mx, my);
+                if (i === 0) ctx.moveTo(r.sx(q.x), r.sy(q.y));
+                else ctx.lineTo(r.sx(q.x), r.sy(q.y));
+            });
+        };
+
+        ctx.save();
+        if (this.freehandMode === "brush") {
+            const poly = brushOutlinePolygon(points, this.freehandTolerance());
+            ctx.fillStyle = paint ? paint.stroke : "rgba(204, 214, 246, 0.85)";
+            for (const [mx, my] of variants) {
+                trace(poly, mx, my);
+                ctx.closePath();
+                ctx.fill("nonzero");
+            }
+        } else {
+            ctx.strokeStyle = paint ? paint.stroke : "rgba(130, 170, 255, 0.9)";
+            ctx.lineWidth = paint ? Math.max(0.75, paint.width * r.view.scale) : 1.5;
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            for (const [mx, my] of variants) {
+                trace(points, mx, my);
+                ctx.stroke();
+            }
         }
+        ctx.restore();
     }
 
     drawBackgroundOverlay(ctx, r) {

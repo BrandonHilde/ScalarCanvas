@@ -26,6 +26,8 @@ class History {
         this.redoStack = [];
         this.limit = 200;
         this.listeners = [];
+        // The command most recently applied or reverted (null after clear()).
+        this.lastCommand = null;
     }
 
     onChange(fn) {
@@ -42,6 +44,7 @@ class History {
 
     execute(command) {
         command.apply();
+        this.lastCommand = command;
         this.undoStack.push(command);
         if (this.undoStack.length > this.limit) this.undoStack.shift();
         this.redoStack.length = 0;
@@ -50,6 +53,7 @@ class History {
     }
 
     push(command) {
+        this.lastCommand = command;
         this.undoStack.push(command);
         if (this.undoStack.length > this.limit) this.undoStack.shift();
         this.redoStack.length = 0;
@@ -60,6 +64,7 @@ class History {
         const command = this.undoStack.pop();
         if (!command) return false;
         command.revert();
+        this.lastCommand = command;
         this.redoStack.push(command);
         this.emit();
         return true;
@@ -69,6 +74,7 @@ class History {
         const command = this.redoStack.pop();
         if (!command) return false;
         command.apply();
+        this.lastCommand = command;
         this.undoStack.push(command);
         this.emit();
         return true;
@@ -83,6 +89,7 @@ class History {
     }
 
     clear() {
+        this.lastCommand = null;
         this.undoStack.length = 0;
         this.redoStack.length = 0;
         this.emit();

@@ -116,4 +116,19 @@ class FontDocument {
             kerning: Array.from(this.kerning.entries()),
         };
     }
+
+    static fromJSON(data) {
+        if (!data || data.format !== "scalarcanvas-font") throw new Error("Not a ScalarCanvas font project");
+        const doc = new FontDocument();
+        doc.unitsPerEm = Number(data.unitsPerEm) || 1000;
+        doc.glyphs = (data.glyphs || []).map((g) => Glyph.fromJSON(g));
+        doc.names = new Map(data.names || []);
+        doc.metrics = Object.assign(new Metrics(), data.metrics || {});
+        doc.head = Object.assign(defaultHead(), data.head || {});
+        doc.hhea = Object.assign(defaultHhea(), data.hhea || {});
+        doc.post = Object.assign(defaultPost(), data.post || {});
+        doc.os2 = Object.assign(defaultOS2(), data.os2 || {});
+        doc.kerning = new Map(data.kerning || []);
+        return doc;
+    }
 }

@@ -45,4 +45,25 @@ class CanvasDocument {
         this.metrics.capHeight = this.height;
         this.metrics.xHeight = Math.round(this.height * 0.5);
     }
+
+    toJSON() {
+        return {
+            format: "scalarcanvas-canvas",
+            version: 1,
+            width: this.width,
+            height: this.height,
+            artboard: this.artboard.toJSON(),
+        };
+    }
+
+    static fromJSON(data) {
+        if (!data || data.format !== "scalarcanvas-canvas") throw new Error("Not a ScalarCanvas canvas project");
+        const doc = new CanvasDocument(Number(data.width) || 1000, Number(data.height) || 1000);
+        const artboard = Glyph.fromJSON(data.artboard || {});
+        artboard.name = "artboard";
+        artboard.advanceWidth = doc.width;
+        doc.artboard = artboard;
+        doc.glyphs = [artboard];
+        return doc;
+    }
 }

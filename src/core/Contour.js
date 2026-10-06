@@ -81,7 +81,10 @@ class Contour {
     }
 
     clone() {
-        return new Contour(this.points.map((p) => p.clone()), this.closed);
+        const c = new Contour(this.points.map((p) => p.clone()), this.closed);
+        // Optional per-contour paint used by the drawing canvas ({stroke, fill, width}).
+        if (this.style) c.style = { ...this.style };
+        return c;
     }
 
     get length() {

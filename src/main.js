@@ -62,17 +62,38 @@ const els = {
     bgScale: document.getElementById("bgScale"),
     bgX: document.getElementById("bgX"),
     bgY: document.getElementById("bgY"),
+    saveProjectBtn: document.getElementById("saveProjectBtn"),
+    restoreBtn: document.getElementById("restoreBtn"),
+    addGlyphSet: document.getElementById("addGlyphSet"),
+    freehandMode: document.getElementById("freehandMode"),
+    brushSize: document.getElementById("brushSize"),
+    brushSizeRow: document.getElementById("brushSizeRow"),
+    smoothing: document.getElementById("smoothing"),
+    usePressure: document.getElementById("usePressure"),
+    pressureRow: document.getElementById("pressureRow"),
+    inspFamily: document.getElementById("insp-family"),
+    inspStyle: document.getElementById("insp-style"),
+    btnDirection: document.getElementById("btn-direction"),
 };
 
 const TOOL_HINTS = {
-    edit: "Edit: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes.",
+    edit: "Edit: click to select, shift-click to add, drag to move. Double-click a segment to insert a point. Arrow keys nudge; Delete removes. Ctrl+A selects all, Ctrl+C / Ctrl+X / Ctrl+V copy, cut and paste contours (also between glyphs), Ctrl+D duplicates.",
     pen: "Pen: click to add a point, drag to pull curve handles, click the first point to close. Alt breaks the handle. Enter finishes open; Esc cancels.",
-    freehand: "Freehand: drag to draw freely and a smooth curve is fitted to the stroke. The contour stays open and unfilled. Esc cancels.",
+    freehand: "Freehand: drag to draw and a smooth curve is fitted on release. Line draws a centre-line (end near the start to close it); Brush paints a filled stroke — pen pressure varies its width. B switches style. Esc cancels.",
     metrics: "Metrics: drag the purple advance guide or the sidebearing guide. Edit exact values in the panel.",
     background: "Image: drag the tracing image to move it, drag the bottom-right handle to scale. Load an image or tweak opacity, scale and position in the panel.",
 };
 
-const CANVAS_HINT = "Draw: use Pen or Freehand to draw. Edit moves points. Add shapes from the toolbar. Save SVG exports your artboard.";
+const CANVAS_HINT = "Draw: use Pen or Freehand to draw, add shapes from the toolbar. Edit moves points; colour changes apply to the selected strokes. Space-drag or middle-drag pans. Save keeps an editable project; Save SVG exports the artboard.";
+
+const AUTOSAVE_KEY = "scalarcanvas.autosave";
+
+// Freehand defaults per document type: glyphs need filled outlines, so the
+// brush is the natural default there; the canvas starts with line art.
+const freehandPrefs = {
+    font: { mode: "brush", size: null },
+    canvas: { mode: "line", size: 12 },
+};
 
 const TOOL_ORDER = ["edit", "pen", "freehand", "metrics", "background"];
 
@@ -84,6 +105,11 @@ const editor = new Editor(null, renderer, history);
 
 let panning = false;
 let lastPan = null;
+let spaceHeld = false;
+let dirty = false;
+let autosaveTimer = 0;
+let redrawFrame = 0;
+let lastDown = { time: 0, x: 0, y: 0 };
 
 /* ── sizing ─────────────────────────────────────────── */
 
@@ -91,6 +117,7 @@ function resize() {
     renderer.resize(els.stage.clientWidth, els.stage.clientHeight);
     resizePreview();
     redraw();
+    drawPreview();
 }
 
 function resizePreview() {
@@ -110,6 +137,179 @@ function loadFont(arrayBuffer) {
         return;
     }
     setFont(parsed);
+}
+
+/* ── projects, autosave ─────────────────────────────── */
+
+function projectData() {
+    const data = {
+        format: "scalarcanvas-project",
+        version: 1,
+        mode,
+        glyphIndex: editor.glyphIndex,
+        document: font.toJSON(),
+    };
+    if (mode === "canvas") {
+        data.settings = {
+            stroke: els.canvasStroke.value,
+            fill: els.canvasFill.value,
+            lineWidth: parseFloat(els.canvasLineWidth.value),
+            gridSize: parseFloat(els.canvasGridSize.value),
+        };
+    }
+    return data;
+}
+
+function loadProject(data) {
+    if (!data || data.format !== "scalarcanvas-project") throw new Error("This file is not a ScalarCanvas project.");
+    if (data.mode === "canvas") {
+        const settings = data.settings || {};
+        if (settings.stroke) els.canvasStroke.value = settings.stroke;
+        if (settings.fill) els.canvasFill.value = settings.fill;
+        if (Number.isFinite(settings.lineWidth)) els.canvasLineWidth.value = settings.lineWidth;
+        if (Number.isFinite(settings.gridSize)) els.canvasGridSize.value = settings.gridSize;
+        setCanvas(CanvasDocument.fromJSON(data.document));
+    } else {
+        setFont(FontDocument.fromJSON(data.document));
+        const index = Number(data.glyphIndex) || 0;
+        if (index > 0 && index < font.numGlyphs) selectGlyph(index);
+    }
+}
+
+function projectFileName() {
+    if (mode === "font") return (font.postScriptName || "font") + ".scalarcanvas.json";
+    return "drawing.scalarcanvas.json";
+}
+
+function saveProject() {
+    if (!font) return;
+    const blob = new Blob([JSON.stringify(projectData())], { type: "application/json" });
+    downloadBlob(blob, projectFileName());
+    dirty = false;
+    autosaveNow();
+    toast("Project saved");
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
+
+function markDirty() {
+    dirty = true;
+    scheduleAutosave();
+}
+
+function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(autosaveNow, 800);
+}
+
+// Keeps the latest session in localStorage so a refresh or crash loses
+// nothing. Very large fonts can exceed the storage quota; that is reported
+// once and otherwise ignored (Save still works).
+let autosaveWarned = false;
+function autosaveNow() {
+    clearTimeout(autosaveTimer);
+    if (!font) return;
+    try {
+        const payload = { savedAt: Date.now(), name: mode === "font" ? font.familyName : "Canvas", project: projectData() };
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+    } catch (err) {
+        if (!autosaveWarned) {
+            autosaveWarned = true;
+            toast("Autosave unavailable (document too large) — use Save");
+        }
+        console.warn("Autosave failed:", err);
+    }
+}
+
+function readAutosave() {
+    try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+        return null;
+    }
+}
+
+function timeAgo(ms) {
+    const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return "just now";
+    const m = Math.round(s / 60);
+    if (m < 60) return `${m} min ago`;
+    const h = Math.round(m / 60);
+    if (h < 48) return `${h} h ago`;
+    return `${Math.round(h / 24)} days ago`;
+}
+
+function updateRestoreButton() {
+    const saved = readAutosave();
+    const show = !font && saved && saved.project;
+    els.restoreBtn.hidden = !show;
+    if (show) {
+        const kind = saved.project.mode === "canvas" ? "canvas" : `font “${saved.name}”`;
+        els.restoreBtn.textContent = `Restore last session — ${kind}, ${timeAgo(saved.savedAt)}`;
+    }
+}
+
+function restoreAutosave() {
+    const saved = readAutosave();
+    if (!saved) return;
+    try {
+        loadProject(saved.project);
+    } catch (err) {
+        showAlert("Could not restore the last session:\n" + err.message, "Restore failed");
+    }
+}
+
+async function openFile(file) {
+    if (!file) return;
+    if (isImageFile(file)) {
+        loadBackground(file);
+        return;
+    }
+    if (font && dirty && !(await showConfirm("The current document has unsaved changes. Discard them and open the file?", "Open file", "Discard"))) return;
+
+    const isJson = /\.json$/i.test(file.name) || file.type === "application/json";
+    const reader = new FileReader();
+    if (isJson) {
+        reader.onload = () => {
+            try {
+                loadProject(JSON.parse(reader.result));
+            } catch (err) {
+                showAlert("Could not open project:\n" + err.message, "Open failed");
+            }
+        };
+        reader.readAsText(file);
+    } else {
+        reader.onload = () => loadFont(reader.result);
+        reader.readAsArrayBuffer(file);
+    }
+}
+
+/* ── toast ──────────────────────────────────────────── */
+
+let toastEl = null;
+let toastTimer = 0;
+function toast(message) {
+    if (!toastEl) {
+        toastEl = document.createElement("div");
+        toastEl.className = "toast";
+        els.stage.appendChild(toastEl);
+    }
+    toastEl.textContent = message;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
 }
 
 function setModeUI(next) {
@@ -167,6 +367,7 @@ function configureRenderer(forMode) {
         els.togglePoints.classList.toggle("active", renderer.showPoints);
         els.toggleFill.classList.toggle("active", renderer.showFill);
         updateGridSnap();
+        updatePaint();
     } else {
         renderer.showGrid = false;
         renderer.showMetrics = true;
@@ -179,6 +380,51 @@ function configureRenderer(forMode) {
         els.togglePoints.classList.toggle("active", renderer.showPoints);
         els.toggleFill.classList.toggle("active", renderer.showFill);
     }
+}
+
+// The paint new canvas contours are stamped with.
+function updatePaint() {
+    editor.paint = {
+        stroke: els.canvasStroke.value || "#64ffda",
+        fill: els.canvasFill.value || "#ccd6f6",
+        width: renderer.lineWidth,
+    };
+}
+
+/* ── freehand settings ──────────────────────────────── */
+
+function applyFreehandPrefs(forMode) {
+    const prefs = freehandPrefs[forMode];
+    if (!prefs) return;
+    // Font brush sizes are in font units, so rescale when the em size changes.
+    const upm = font ? font.unitsPerEm : 1000;
+    if (forMode === "font" && prefs.upm && prefs.upm !== upm && prefs.size != null) {
+        prefs.size = Math.round((prefs.size * upm) / prefs.upm);
+    }
+    if (prefs.size == null) prefs.size = Math.round(upm * 0.08);
+    if (forMode === "font") prefs.upm = upm;
+    editor.freehandMode = prefs.mode;
+    editor.brushSize = prefs.size;
+    updateFreehandControls();
+}
+
+function updateFreehandControls() {
+    const brush = editor.freehandMode === "brush";
+    els.freehandMode.querySelectorAll("button").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.value === editor.freehandMode);
+    });
+    els.brushSizeRow.style.display = brush ? "" : "none";
+    els.pressureRow.style.display = brush ? "" : "none";
+    if (document.activeElement !== els.brushSize) els.brushSize.value = editor.brushSize;
+    els.smoothing.value = editor.smoothing;
+    els.usePressure.checked = editor.usePressure;
+}
+
+function setFreehandMode(value) {
+    editor.freehandMode = value === "brush" ? "brush" : "line";
+    if (freehandPrefs[mode]) freehandPrefs[mode].mode = editor.freehandMode;
+    updateFreehandControls();
+    redraw();
 }
 
 function syncCanvasControls() {
@@ -202,10 +448,17 @@ function applyDocument(next, nextMode) {
     els.previewText.disabled = !isFont;
     els.addGlyphInput.disabled = !isFont;
     els.addGlyphBtn.disabled = !isFont;
+    els.addGlyphSet.disabled = !isFont;
+    els.inspFamily.disabled = !isFont;
+    els.inspStyle.disabled = !isFont;
     els.addShape.disabled = false;
+    els.saveProjectBtn.disabled = false;
+    els.restoreBtn.hidden = true;
 
     editor.setDocument(font);
     history.clear();
+    dirty = false;
+    applyFreehandPrefs(nextMode);
 
     // The stage column changes width between modes (the glyph sidebar is only
     // present in font mode). Force a reflow, then size the canvas to match so
@@ -252,10 +505,67 @@ function newFont() {
     doc.setName(4, "New Font Regular");
     doc.setName(6, "NewFont-Regular");
 
+    // .notdef is conventionally a hollow box; space is needed by every font.
     const notdef = doc.addGlyph(new Glyph(".notdef"));
     notdef.advanceWidth = Math.round(doc.unitsPerEm * 0.5);
+    notdef.leftSideBearing = 50;
+    notdef.addContour(rectContour({ x0: 50, y0: 0, x1: 450, y1: 700 }));
+    notdef.addContour(rectContour({ x0: 100, y0: 50, x1: 400, y1: 650 }).reverse());
+
+    const space = doc.addGlyph(new Glyph("space"));
+    space.unicodes = [0x20];
+    space.advanceWidth = Math.round(doc.unitsPerEm * 0.25);
 
     setFont(doc);
+}
+
+/* ── character sets ─────────────────────────────────── */
+
+function codeRange(from, to) {
+    const out = [];
+    for (let cp = from; cp <= to; cp++) out.push(cp);
+    return out;
+}
+
+const isAlnum = (cp) => (cp >= 0x30 && cp <= 0x39) || (cp >= 0x41 && cp <= 0x5a) || (cp >= 0x61 && cp <= 0x7a);
+
+const GLYPH_SETS = {
+    upper: () => codeRange(0x41, 0x5a),
+    lower: () => codeRange(0x61, 0x7a),
+    digits: () => codeRange(0x30, 0x39),
+    punct: () => codeRange(0x20, 0x7e).filter((cp) => !isAlnum(cp)),
+    ascii: () => codeRange(0x20, 0x7e),
+};
+
+function defaultAdvance(cp) {
+    const upm = font.unitsPerEm;
+    if (cp === 0x20) return Math.round(upm * 0.25);
+    if (cp >= 0x30 && cp <= 0x39) return Math.round(upm * 0.55);
+    if (cp >= 0x61 && cp <= 0x7a) return Math.round(upm * 0.5);
+    return Math.round(upm * 0.6);
+}
+
+function addGlyphSet(kind) {
+    if (!font || !GLYPH_SETS[kind]) return;
+    let added = 0;
+    let firstNew = -1;
+    for (const cp of GLYPH_SETS[kind]()) {
+        if (font.getGlyphByCodepoint(cp)) continue;
+        const glyph = new Glyph(unicodeToGlyphName(cp));
+        glyph.unicodes = [cp];
+        glyph.advanceWidth = defaultAdvance(cp);
+        font.addGlyph(glyph);
+        if (firstNew === -1) firstNew = font.numGlyphs - 1;
+        added++;
+    }
+    els.glyphSearch.value = "";
+    if (added) {
+        markDirty();
+        selectGlyph(firstNew);
+        updateStatus();
+    }
+    buildGlyphList("");
+    toast(added ? `Added ${added} glyph${added === 1 ? "" : "s"}` : "All of those glyphs already exist");
 }
 
 function parseGlyphQuery(query) {
@@ -296,7 +606,8 @@ function addGlyphFromInput() {
 
     const glyph = font.addGlyph(new Glyph(spec.name));
     glyph.unicodes = spec.unicodes.slice();
-    glyph.advanceWidth = spec.unicodes[0] === 0x20 ? 250 : Math.round(font.unitsPerEm * 0.6);
+    glyph.advanceWidth = spec.unicodes.length ? defaultAdvance(spec.unicodes[0]) : Math.round(font.unitsPerEm * 0.6);
+    markDirty();
 
     els.addGlyphInput.value = "";
     els.glyphSearch.value = "";
@@ -353,7 +664,89 @@ function updateBackgroundControls() {
 
 /* ── glyph list ─────────────────────────────────────── */
 
+// Trace contours into `ctx` with a font-unit → pixel mapping.
+function traceContours(ctx, contours, originX, baseline, scale) {
+    const px = (p) => originX + p.x * scale;
+    const py = (p) => baseline - p.y * scale;
+    for (const contour of contours) {
+        let started = false;
+        for (const seg of contour.segments()) {
+            if (!started) {
+                ctx.moveTo(px(seg.p0), py(seg.p0));
+                started = true;
+            }
+            if (seg.type === "line") {
+                ctx.lineTo(px(seg.p1), py(seg.p1));
+            } else if (seg.type === "quad") {
+                ctx.quadraticCurveTo(px(seg.control), py(seg.control), px(seg.p1), py(seg.p1));
+            } else {
+                ctx.bezierCurveTo(px(seg.control1), py(seg.control1), px(seg.control2), py(seg.control2), px(seg.p1), py(seg.p1));
+            }
+        }
+        if (contour.closed) ctx.closePath();
+    }
+}
+
+const THUMB_SIZE = 30;
+
+function drawGlyphThumb(canvas, glyph) {
+    const dpr = window.devicePixelRatio || 1;
+    const size = THUMB_SIZE;
+    if (canvas.width !== size * dpr) {
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+    }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+    if (!font || !glyph) return;
+
+    const m = font.metrics;
+    const span = Math.max(1, m.ascender - m.descender);
+    const scale = (size * 0.82) / Math.max(span, glyph.advanceWidth || 0);
+    const baseline = size / 2 + ((m.ascender + m.descender) / 2) * scale;
+    const originX = (size - (glyph.advanceWidth || 0) * scale) / 2;
+
+    const contours = glyph.getOutlineContours((i) => font.resolveGlyph(i));
+    const closed = contours.filter((c) => c.closed);
+    const open = contours.filter((c) => !c.closed);
+    if (closed.length) {
+        ctx.beginPath();
+        traceContours(ctx, closed, originX, baseline, scale);
+        ctx.fillStyle = "#ccd6f6";
+        ctx.fill("nonzero");
+    }
+    if (open.length) {
+        ctx.beginPath();
+        traceContours(ctx, open, originX, baseline, scale);
+        ctx.strokeStyle = "#ccd6f6";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
+// Thumbnails are drawn only once their row scrolls into view.
+const thumbObserver = "IntersectionObserver" in window
+    ? new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const item = entry.target;
+            thumbObserver.unobserve(item);
+            const glyph = font && font.glyphs[Number(item.dataset.index)];
+            drawGlyphThumb(item.querySelector(".gthumb"), glyph);
+        }
+    }, { root: els.glyphList, rootMargin: "200px 0px" })
+    : null;
+
+function glyphLabels(glyph, i) {
+    const cp = glyph.codepoint;
+    const cpHex = cp !== null ? "U+" + cp.toString(16).toUpperCase().padStart(4, "0") : "";
+    const char = cp !== null && cp >= 32 && cp !== 127 ? String.fromCodePoint(cp) : "";
+    return { cpHex, char, haystack: `${glyph.name} ${cpHex} ${char} ${i}`.toLowerCase() };
+}
+
 function buildGlyphList(filter) {
+    if (thumbObserver) thumbObserver.disconnect();
     els.glyphList.innerHTML = "";
     if (!font) return;
 
@@ -363,19 +756,22 @@ function buildGlyphList(filter) {
 
     for (let i = 0; i < font.glyphs.length; i++) {
         const glyph = font.glyphs[i];
-        const cp = glyph.codepoint;
-        const cpHex = cp !== null ? "U+" + cp.toString(16).toUpperCase().padStart(4, "0") : "";
-        const char = cp !== null && cp >= 32 && cp !== 127 ? String.fromCodePoint(cp) : "";
-        const haystack = `${glyph.name} ${cpHex} ${char} ${i}`.toLowerCase();
+        const { cpHex, char, haystack } = glyphLabels(glyph, i);
         if (term && !haystack.includes(term)) continue;
 
         const item = document.createElement("div");
         item.className = "glyph-item" + (i === editor.glyphIndex ? " selected" : "");
         item.dataset.index = String(i);
 
+        const thumb = document.createElement("canvas");
+        thumb.className = "gthumb";
+
         const gid = document.createElement("span");
         gid.className = "gid";
         gid.textContent = "#" + i;
+
+        const meta = document.createElement("div");
+        meta.className = "gmeta";
 
         const name = document.createElement("span");
         name.className = "gname";
@@ -385,8 +781,11 @@ function buildGlyphList(filter) {
         cpEl.className = "gcp";
         cpEl.textContent = char ? `${char} ${cpHex}` : cpHex;
 
-        item.append(gid, name, cpEl);
+        meta.append(name, cpEl);
+        item.append(thumb, meta, gid);
         fragment.appendChild(item);
+        if (thumbObserver) thumbObserver.observe(item);
+        else drawGlyphThumb(thumb, glyph);
 
         shown++;
         if (shown >= 800) break;
@@ -395,10 +794,35 @@ function buildGlyphList(filter) {
     els.glyphList.appendChild(fragment);
 }
 
+function glyphItem(index) {
+    return els.glyphList.querySelector(`.glyph-item[data-index="${index}"]`);
+}
+
+// Refresh one row (thumbnail and labels) after its glyph changed.
+function refreshGlyphItem(index) {
+    const item = glyphItem(index);
+    const glyph = font && font.glyphs[index];
+    if (!item || !glyph) return;
+    const { cpHex, char } = glyphLabels(glyph, index);
+    item.querySelector(".gname").textContent = glyph.name || "(unnamed)";
+    item.querySelector(".gcp").textContent = char ? `${char} ${cpHex}` : cpHex;
+    drawGlyphThumb(item.querySelector(".gthumb"), glyph);
+}
+
+function markSelectedGlyph() {
+    els.glyphList.querySelectorAll(".glyph-item.selected").forEach((el) => el.classList.remove("selected"));
+    const item = glyphItem(editor.glyphIndex);
+    if (item) {
+        item.classList.add("selected");
+        item.scrollIntoView({ block: "nearest" });
+    }
+}
+
 function selectGlyph(index) {
     if (!font || !font.glyphs[index]) return;
     editor.setGlyphIndex(index);
-    buildGlyphList(els.glyphSearch.value);
+    if (glyphItem(index)) markSelectedGlyph();
+    else buildGlyphList(els.glyphSearch.value);
     renderer.fitToGlyph(editor.glyph);
     redraw();
     updateStatus();
@@ -415,6 +839,16 @@ function redraw() {
     }
     renderer.render(editor.glyph);
     editor.drawOverlay(renderer.ctx);
+}
+
+// Coalesces redraws from high-frequency input (pointer moves, pen samples)
+// into one per animation frame.
+function scheduleRedraw() {
+    if (redrawFrame) return;
+    redrawFrame = requestAnimationFrame(() => {
+        redrawFrame = 0;
+        redraw();
+    });
 }
 
 function updateStatus() {
@@ -468,6 +902,14 @@ function updateInspector() {
     els.btnReverse.disabled = !editable;
     els.btnClose.disabled = !editable;
     els.btnDelete.disabled = !editable;
+    els.btnDirection.disabled = !editable;
+    els.inspName.disabled = !editable || mode !== "font";
+    els.inspUnicode.disabled = !editable || mode !== "font";
+
+    if (font && mode === "font") {
+        if (document.activeElement !== els.inspFamily) els.inspFamily.value = font.familyName;
+        if (document.activeElement !== els.inspStyle) els.inspStyle.value = font.styleName;
+    }
 
     const metricInputs = [
         [els.inspAscender, "ascender"],
@@ -525,6 +967,10 @@ function updateCursor() {
         els.canvas.style.cursor = "grabbing";
         return;
     }
+    if (spaceHeld) {
+        els.canvas.style.cursor = "grab";
+        return;
+    }
     if (editor.tool === "pen") els.canvas.style.cursor = "crosshair";
     else if (editor.tool === "freehand") els.canvas.style.cursor = "crosshair";
     else if (editor.tool === "metrics") els.canvas.style.cursor = "ew-resize";
@@ -533,6 +979,9 @@ function updateCursor() {
 }
 
 /* ── preview ────────────────────────────────────────── */
+
+// Horizontal extents of the glyphs drawn in the preview, for click-to-select.
+let previewHits = [];
 
 function drawPreview() {
     if (mode !== "font") return;
@@ -544,6 +993,7 @@ function drawPreview() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = "#14161f";
     ctx.fillRect(0, 0, w, h);
+    previewHits = [];
     if (!font) return;
 
     ctx.strokeStyle = "#2a2d3e";
@@ -556,40 +1006,31 @@ function drawPreview() {
     const text = els.previewText.value || "";
     const scale = (h * 0.72) / font.unitsPerEm;
     const baseline = h * 0.78;
+    const current = editor.glyph;
     let cursorX = 10;
 
-    ctx.fillStyle = "#ccd6f6";
     for (const char of text) {
         const cp = char.codePointAt(0);
         const glyph = font.getGlyphByCodepoint(cp);
         if (!glyph) {
-            cursorX += font.unitsPerEm * 0.4 * scale;
+            // Missing glyphs show as a faint box so gaps in the set are visible.
+            const boxW = font.unitsPerEm * 0.4 * scale;
+            ctx.strokeStyle = "#3a3f58";
+            ctx.setLineDash([3, 3]);
+            ctx.strokeRect(cursorX + 2, baseline - font.metrics.capHeight * scale, boxW - 4, font.metrics.capHeight * scale);
+            ctx.setLineDash([]);
+            cursorX += boxW;
             continue;
         }
 
         const contours = glyph.getOutlineContours((i) => font.resolveGlyph(i));
         ctx.beginPath();
-        for (const contour of contours) {
-            let started = false;
-            for (const seg of contour.segments()) {
-                const px = (p) => cursorX + p.x * scale;
-                const py = (p) => baseline - p.y * scale;
-                if (!started) {
-                    ctx.moveTo(px(seg.p0), py(seg.p0));
-                    started = true;
-                }
-                if (seg.type === "line") {
-                    ctx.lineTo(px(seg.p1), py(seg.p1));
-                } else if (seg.type === "quad") {
-                    ctx.quadraticCurveTo(px(seg.control), py(seg.control), px(seg.p1), py(seg.p1));
-                } else {
-                    ctx.bezierCurveTo(px(seg.control1), py(seg.control1), px(seg.control2), py(seg.control2), px(seg.p1), py(seg.p1));
-                }
-            }
-            if (contour.closed) ctx.closePath();
-        }
+        traceContours(ctx, contours, cursorX, baseline, scale);
+        ctx.fillStyle = glyph === current ? "#64ffda" : "#ccd6f6";
         ctx.fill("nonzero");
 
+        const advance = Math.max(glyph.advanceWidth * scale, 4);
+        previewHits.push({ x0: cursorX, x1: cursorX + advance, index: font.glyphs.indexOf(glyph) });
         cursorX += glyph.advanceWidth * scale;
         if (cursorX > w) break;
     }
@@ -598,7 +1039,7 @@ function drawPreview() {
 /* ── editor hooks ───────────────────────────────────── */
 
 editor.onChange = () => {
-    redraw();
+    scheduleRedraw();
     updateBackgroundControls();
 };
 editor.onSelectionChange = () => {
@@ -612,6 +1053,14 @@ history.onChange(() => {
     updateStatus();
     updateButtons();
     redraw();
+    if (!font || !history.lastCommand) return;
+    markDirty();
+    if (mode === "font") {
+        const changed = history.lastCommand.glyph;
+        const index = changed ? font.glyphs.indexOf(changed) : editor.glyphIndex;
+        refreshGlyphItem(index >= 0 ? index : editor.glyphIndex);
+        drawPreview();
+    }
 });
 
 /* ── modal popups ───────────────────────────────────── */
@@ -660,12 +1109,13 @@ els.modal.querySelector(".modal-backdrop").addEventListener("click", () => close
 /* ── event wiring ───────────────────────────────────── */
 
 els.fileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => loadFont(reader.result);
-    reader.readAsArrayBuffer(file);
+    openFile(e.target.files[0]);
+    // Reset so choosing the same file again still fires "change".
+    e.target.value = "";
 });
+
+els.saveProjectBtn.addEventListener("click", saveProject);
+els.restoreBtn.addEventListener("click", restoreAutosave);
 
 els.newBtn.addEventListener("click", async () => {
     const isCanvas = mode === "canvas";
@@ -691,17 +1141,7 @@ function isImageFile(file) {
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-
-    if (isImageFile(file)) {
-        loadBackground(file);
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => loadFont(reader.result);
-    reader.readAsArrayBuffer(file);
+    openFile(e.dataTransfer.files[0]);
 });
 
 function exportSVG() {
@@ -714,21 +1154,30 @@ function exportSVG() {
         lineWidth: parseFloat(els.canvasLineWidth.value) || 0,
     });
     downloadSVG(svg, "design.svg");
+    toast("SVG exported");
 }
 
 els.saveSvgBtn.addEventListener("click", exportSVG);
 
-els.exportBtn.addEventListener("click", () => {
+els.exportBtn.addEventListener("click", async () => {
     if (!font) return;
+    // TrueType has no open contours: every outline is closed and filled.
+    const withOpen = font.glyphs.filter((g) => g.contours.some((c) => !c.closed));
+    if (withOpen.length) {
+        const names = withOpen.slice(0, 6).map((g) => g.name || "(unnamed)").join(", ") + (withOpen.length > 6 ? ", …" : "");
+        const ok = await showConfirm(
+            `${withOpen.length} glyph${withOpen.length === 1 ? " has" : "s have"} open contours (${names}). ` +
+            "TrueType closes every contour, so these will export as filled shapes. " +
+            "Tip: draw glyphs with the Brush style, or close contours with Open / Close.",
+            "Open contours",
+            "Export anyway"
+        );
+        if (!ok) return;
+    }
     try {
         const buffer = new TTFWriter(font, { correctDirection: false }).write();
-        const blob = new Blob([buffer], { type: "font/ttf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = (font.postScriptName || "export") + ".ttf";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        downloadBlob(new Blob([buffer], { type: "font/ttf" }), (font.postScriptName || "export") + ".ttf");
+        toast("Font exported");
     } catch (err) {
         showAlert("Export failed:\n" + err.message, "Export failed");
         console.error(err);
@@ -821,19 +1270,26 @@ els.toggleSnap.addEventListener("click", () => {
 
 els.toggleMirror.addEventListener("click", cycleMirror);
 
+// Colours/width set the paint for new strokes; committing a change while
+// something is selected also repaints the selected strokes (undoable).
 els.canvasStroke.addEventListener("input", () => {
     renderer.strokeStyle = els.canvasStroke.value;
+    updatePaint();
     redraw();
 });
+els.canvasStroke.addEventListener("change", () => editor.applyStyleToSelection({ stroke: els.canvasStroke.value }));
 els.canvasFill.addEventListener("input", () => {
     renderer.fillStyle = els.canvasFill.value;
+    updatePaint();
     redraw();
 });
+els.canvasFill.addEventListener("change", () => editor.applyStyleToSelection({ fill: els.canvasFill.value }));
 els.canvasLineWidth.addEventListener("change", () => {
     const value = parseFloat(els.canvasLineWidth.value);
-    renderer.lineWidth = Number.isFinite(value) ? value : 1.5;
+    renderer.lineWidth = Number.isFinite(value) && value >= 0 ? value : 1.5;
     els.canvasLineWidth.value = renderer.lineWidth;
-    redraw();
+    updatePaint();
+    if (!editor.applyStyleToSelection({ width: renderer.lineWidth })) redraw();
 });
 els.canvasGridSize.addEventListener("change", () => {
     const value = parseFloat(els.canvasGridSize.value);
@@ -845,6 +1301,7 @@ els.canvasGridSize.addEventListener("change", () => {
 els.canvasW.addEventListener("change", () => {
     if (!font || !font.canvas) return;
     font.setSize(parseFloat(els.canvasW.value) || 1000, font.height);
+    markDirty();
     syncCanvasControls();
     redraw();
     updateStatus();
@@ -852,6 +1309,7 @@ els.canvasW.addEventListener("change", () => {
 els.canvasH.addEventListener("change", () => {
     if (!font || !font.canvas) return;
     font.setSize(font.width, parseFloat(els.canvasH.value) || 1000);
+    markDirty();
     syncCanvasControls();
     redraw();
     updateStatus();
@@ -869,6 +1327,74 @@ els.redoBtn.addEventListener("click", () => history.redo());
 els.btnReverse.addEventListener("click", () => editor.reverseContours());
 els.btnClose.addEventListener("click", () => editor.toggleContourClosed());
 els.btnDelete.addEventListener("click", () => editor.deleteSelection());
+els.btnDirection.addEventListener("click", () => editor.correctDirection());
+
+els.freehandMode.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-value]");
+    if (btn) setFreehandMode(btn.dataset.value);
+});
+els.brushSize.addEventListener("change", () => {
+    const value = parseFloat(els.brushSize.value);
+    editor.brushSize = Number.isFinite(value) && value > 0 ? value : editor.brushSize;
+    if (freehandPrefs[mode]) freehandPrefs[mode].size = editor.brushSize;
+    updateFreehandControls();
+});
+els.smoothing.addEventListener("input", () => {
+    editor.smoothing = parseFloat(els.smoothing.value) || 3;
+});
+els.usePressure.addEventListener("change", () => {
+    editor.usePressure = els.usePressure.checked;
+});
+
+els.addGlyphSet.addEventListener("change", () => {
+    const kind = els.addGlyphSet.value;
+    els.addGlyphSet.value = "";
+    addGlyphSet(kind);
+});
+
+function renameFont() {
+    if (!font || mode !== "font") return;
+    const family = els.inspFamily.value.trim() || font.familyName;
+    const style = els.inspStyle.value.trim() || font.styleName;
+    font.setName(1, family);
+    font.setName(2, style);
+    font.setName(4, `${family} ${style}`);
+    font.setName(6, `${family}-${style}`.replace(/\s+/g, ""));
+    // Typographic family/style names win over 1/2 when present; keep them in step.
+    if (font.names.has(16)) font.setName(16, family);
+    if (font.names.has(17)) font.setName(17, style);
+    markDirty();
+    updateInspector();
+    updateStatus();
+}
+els.inspFamily.addEventListener("change", renameFont);
+els.inspStyle.addEventListener("change", renameFont);
+
+els.inspName.addEventListener("change", () => {
+    editor.renameGlyph(els.inspName.value);
+    updateInspector();
+});
+
+els.inspUnicode.addEventListener("change", () => {
+    const glyph = editor.glyph;
+    if (!glyph) return;
+    const text = els.inspUnicode.value.trim();
+    const spec = text ? parseGlyphQuery(text) : { unicodes: [] };
+    if (text && !spec.unicodes.length) {
+        showAlert(`"${text}" is not a character or code point. Use e.g. A, U+0041 or uni0041.`, "Unicode");
+        updateInspector();
+        return;
+    }
+    const cp = spec.unicodes[0];
+    const owner = cp !== undefined ? font.getGlyphByCodepoint(cp) : null;
+    if (owner && owner !== glyph) {
+        showAlert(`U+${cp.toString(16).toUpperCase().padStart(4, "0")} is already mapped to "${owner.name}".`, "Unicode");
+        updateInspector();
+        return;
+    }
+    editor.setUnicodes(spec.unicodes);
+    updateInspector();
+});
 
 els.bgInput.addEventListener("change", (e) => {
     loadBackground(e.target.files[0]);
@@ -909,6 +1435,12 @@ els.bgY.addEventListener("change", () => {
 els.glyphSearch.addEventListener("input", () => buildGlyphList(els.glyphSearch.value));
 els.previewText.addEventListener("input", drawPreview);
 
+els.preview.addEventListener("click", (e) => {
+    const x = e.clientX - els.preview.getBoundingClientRect().left;
+    const hit = previewHits.find((h) => x >= h.x0 && x < h.x1);
+    if (hit && hit.index >= 0) selectGlyph(hit.index);
+});
+
 els.glyphList.addEventListener("click", (e) => {
     const item = e.target.closest(".glyph-item");
     if (!item) return;
@@ -935,8 +1467,8 @@ for (const [input, key] of metricFields) {
     input.addEventListener("change", () => {
         if (!font) return;
         font.metrics[key] = Math.round(parseFloat(input.value) || 0);
-        renderer.render(editor.glyph);
-        editor.drawOverlay(renderer.ctx);
+        markDirty();
+        redraw();
         drawPreview();
     });
 }
@@ -948,35 +1480,70 @@ function localPos(e) {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-els.canvas.addEventListener("mousedown", (e) => {
+// Pointer events cover mouse, pen and touch. Pen pressure reaches the editor
+// through the event (see Editor.pressureOf).
+function pointerInfo(e, detail = 1) {
+    return { shiftKey: e.shiftKey, altKey: e.altKey, pointerType: e.pointerType, pressure: e.pressure, detail };
+}
+
+// Keep receiving moves when the pointer leaves the canvas mid-drag.
+function capturePointer(e) {
+    try {
+        els.canvas.setPointerCapture(e.pointerId);
+    } catch (err) {
+        // Not an active pointer (e.g. a synthetic event); window listeners still work.
+    }
+}
+
+function startPan(e) {
+    panning = true;
+    lastPan = { x: e.clientX, y: e.clientY };
+    updateCursor();
+    e.preventDefault();
+}
+
+els.canvas.addEventListener("pointerdown", (e) => {
     if (!font) return;
-    if (e.button === 1) {
-        panning = true;
-        lastPan = { x: e.clientX, y: e.clientY };
-        updateCursor();
-        e.preventDefault();
+    if (e.button === 1 || (e.button === 0 && spaceHeld)) {
+        capturePointer(e);
+        startPan(e);
         return;
     }
     if (e.button !== 0) return;
+    capturePointer(e);
+    e.preventDefault();
+
+    // pointerdown has no click count, so detect double-clicks ourselves.
+    const now = performance.now();
+    const isDouble = now - lastDown.time < 400 && Math.hypot(e.clientX - lastDown.x, e.clientY - lastDown.y) < 6;
+    lastDown = { time: isDouble ? 0 : now, x: e.clientX, y: e.clientY };
+
     const p = localPos(e);
-    editor.onMouseDown(p.x, p.y, e);
+    editor.onMouseDown(p.x, p.y, pointerInfo(e, isDouble ? 2 : 1));
 });
 
-window.addEventListener("mousemove", (e) => {
+window.addEventListener("pointermove", (e) => {
     if (panning) {
         const view = renderer.view;
         view.panX += e.clientX - lastPan.x;
         view.panY += e.clientY - lastPan.y;
         lastPan = { x: e.clientX, y: e.clientY };
-        redraw();
+        scheduleRedraw();
         return;
     }
     if (!font) return;
-    const p = localPos(e);
-    editor.onMouseMove(p.x, p.y, e);
+    // While painting, use every sample the browser coalesced into this event
+    // so fast strokes keep their shape.
+    const samples = editor.drag && editor.drag.type === "freehand" && e.getCoalescedEvents
+        ? e.getCoalescedEvents()
+        : [];
+    for (const sample of samples.length ? samples : [e]) {
+        const p = localPos(sample);
+        editor.onMouseMove(p.x, p.y, pointerInfo(sample));
+    }
 });
 
-window.addEventListener("mouseup", () => {
+function endPointer() {
     if (panning) {
         panning = false;
         updateCursor();
@@ -984,7 +1551,10 @@ window.addEventListener("mouseup", () => {
     }
     if (!font) return;
     editor.onMouseUp();
-});
+}
+
+window.addEventListener("pointerup", endPointer);
+window.addEventListener("pointercancel", endPointer);
 
 els.canvas.addEventListener("wheel", (e) => {
     if (!font) return;
@@ -1010,9 +1580,52 @@ window.addEventListener("keydown", (e) => {
     }
     if (!font) return;
     const tag = e.target && e.target.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
 
-    if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
+    if (e.key === " ") {
+        e.preventDefault();
+        if (!spaceHeld) {
+            spaceHeld = true;
+            updateCursor();
+        }
+        return;
+    }
+
+    const mod = e.ctrlKey || e.metaKey;
+    const key = e.key.toLowerCase();
+    if (mod && key === "s") {
+        e.preventDefault();
+        saveProject();
+        return;
+    }
+    if (mod && key === "a") {
+        e.preventDefault();
+        if (editor.tool !== "edit") setTool("edit");
+        editor.selectAll();
+        return;
+    }
+    if (mod && key === "c") {
+        const n = editor.copySelection();
+        if (n) toast(`Copied ${n} contour${n === 1 ? "" : "s"}`);
+        return;
+    }
+    if (mod && key === "x") {
+        const n = editor.cutSelection();
+        if (n) toast(`Cut ${n} contour${n === 1 ? "" : "s"}`);
+        return;
+    }
+    if (mod && key === "v") {
+        e.preventDefault();
+        if (editor.paste()) setTool("edit");
+        return;
+    }
+    if (mod && key === "d") {
+        e.preventDefault();
+        if (editor.duplicateSelection()) setTool("edit");
+        return;
+    }
+
+    if (mod && key === "z") {
         e.preventDefault();
         if (e.shiftKey) history.redo();
         else history.undo();
@@ -1023,6 +1636,8 @@ window.addEventListener("keydown", (e) => {
         history.redo();
         return;
     }
+    // Leave other browser shortcuts (Ctrl+P, Ctrl+F, ...) alone.
+    if (mod) return;
     if (e.key === "Tab") {
         e.preventDefault();
         const order = mode === "font" ? TOOL_ORDER : TOOL_ORDER.filter((t) => t !== "metrics");
@@ -1035,6 +1650,12 @@ window.addEventListener("keydown", (e) => {
     if (e.key === "e" || e.key === "E") { setTool("edit"); return; }
     if (e.key === "p" || e.key === "P") { setTool("pen"); return; }
     if (e.key === "f" || e.key === "F") { setTool("freehand"); return; }
+    if (e.key === "b" || e.key === "B") {
+        setTool("freehand");
+        setFreehandMode(editor.freehandMode === "brush" ? "line" : "brush");
+        toast(`Freehand: ${editor.freehandMode === "brush" ? "Brush" : "Line"}`);
+        return;
+    }
     if (mode === "canvas" && (e.key === "m" || e.key === "M")) { cycleMirror(); return; }
     if (mode === "font" && (e.key === "m" || e.key === "M")) { setTool("metrics"); return; }
     if (e.key === "i" || e.key === "I") { setTool("background"); return; }
@@ -1045,10 +1666,31 @@ window.addEventListener("keydown", (e) => {
     editor.onKeyDown(e);
 });
 
+window.addEventListener("keyup", (e) => {
+    if (e.key === " " && spaceHeld) {
+        spaceHeld = false;
+        updateCursor();
+    }
+});
+window.addEventListener("blur", () => {
+    spaceHeld = false;
+    updateCursor();
+});
+
 window.addEventListener("resize", resize);
+
+// Flush a pending autosave when the tab is hidden or closed.
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && autosaveTimer) autosaveNow();
+});
+window.addEventListener("pagehide", () => {
+    if (autosaveTimer) autosaveNow();
+});
 
 setModeUI("none");
 resize();
 updateHint();
 updateCursor();
+updateFreehandControls();
+updateRestoreButton();
 renderer.clear();

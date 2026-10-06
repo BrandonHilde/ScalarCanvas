@@ -12,8 +12,9 @@
                 <div class="brand">ScalarCanvas <small id="brandMode">editor</small></div>
 
                 <button id="newBtn" title="Start a new document">New</button>
-                <label class="btn" for="fileInput" data-mode="font">Open TTF</label>
-                <input id="fileInput" type="file" accept=".ttf,font/ttf" data-mode="font" />
+                <label class="btn" for="fileInput" title="Open a .ttf font or a ScalarCanvas project (.json)">Open…</label>
+                <input id="fileInput" type="file" accept=".ttf,font/ttf,.json,application/json" />
+                <button id="saveProjectBtn" disabled title="Save the project as .json (Ctrl+S)">Save</button>
                 <button id="exportBtn" disabled data-mode="font">Export TTF</button>
                 <button id="saveSvgBtn" disabled data-mode="canvas">Save SVG</button>
 
@@ -74,6 +75,16 @@
                         <input id="addGlyphInput" type="text" placeholder="Add: A, U+0041, space" disabled />
                         <button id="addGlyphBtn" disabled title="Add glyph">+</button>
                     </div>
+                    <div class="add-set">
+                        <select id="addGlyphSet" title="Add a whole character set (existing glyphs are kept)" disabled>
+                            <option value="">Add character set…</option>
+                            <option value="upper">Uppercase A–Z</option>
+                            <option value="lower">Lowercase a–z</option>
+                            <option value="digits">Digits 0–9</option>
+                            <option value="punct">Punctuation &amp; symbols</option>
+                            <option value="ascii">All Basic Latin (ASCII)</option>
+                        </select>
+                    </div>
                     <div id="glyphlist"></div>
                 </aside>
 
@@ -81,12 +92,13 @@
                     <canvas id="canvas"></canvas>
                     <div id="empty-state">
                         <h1>ScalarCanvas</h1>
-                        <div class="drop">Drop a .ttf file here<br />or click “Open TTF”</div>
+                        <div class="drop">Drop a .ttf font or a .json project here<br />or click “Open…”</div>
                         <div class="hint">
                             <span>…or start with</span>
                             <button id="emptyCanvasBtn" type="button">Create Blank Canvas</button>
                             <button id="emptyFontBtn" type="button">Create Font</button>
                         </div>
+                        <button id="restoreBtn" type="button" class="restore" hidden>Restore last session</button>
                     </div>
                     <div id="status"></div>
                 </section>
@@ -100,12 +112,33 @@
                         <div class="form-row"><label>Fill</label><input id="canvasFill" type="color" value="#ccd6f6" /></div>
                         <div class="form-row"><label>Line</label><input id="canvasLineWidth" type="number" min="0" step="0.5" value="1.5" /></div>
                         <div class="form-row" id="canvasGridRow"><label>Grid</label><input id="canvasGridSize" type="number" min="0" step="1" value="50" /></div>
+                        <div class="insp-note">Colours apply to new strokes, and to the selection when something is selected.</div>
+                    </div>
+
+                    <div class="insp-section">
+                        <h4>Freehand</h4>
+                        <div class="form-row">
+                            <label>Style</label>
+                            <div class="segmented" id="freehandMode">
+                                <button type="button" data-value="line" title="Fit a smooth centre-line curve">Line</button>
+                                <button type="button" data-value="brush" title="Paint a filled brush stroke (pressure-sensitive with a pen)">Brush</button>
+                            </div>
+                        </div>
+                        <div class="form-row" id="brushSizeRow"><label>Brush size</label><input id="brushSize" type="number" min="1" step="1" value="80" /></div>
+                        <div class="form-row"><label>Smoothing</label><input id="smoothing" type="range" min="0.5" max="12" step="0.5" value="3" /></div>
+                        <div class="form-row" id="pressureRow"><label>Pressure</label><input id="usePressure" type="checkbox" checked /></div>
+                    </div>
+
+                    <div class="insp-section" data-mode="font">
+                        <h4>Font</h4>
+                        <div class="form-row"><label>Family</label><input id="insp-family" type="text" disabled /></div>
+                        <div class="form-row"><label>Style</label><input id="insp-style" type="text" disabled /></div>
                     </div>
 
                     <div class="insp-section" data-mode="font">
                         <h4>Glyph</h4>
-                        <div class="form-row"><label>Name</label><input id="insp-name" type="text" readonly /></div>
-                        <div class="form-row"><label>Unicode</label><input id="insp-unicode" type="text" readonly /></div>
+                        <div class="form-row"><label>Name</label><input id="insp-name" type="text" disabled /></div>
+                        <div class="form-row"><label>Unicode</label><input id="insp-unicode" type="text" placeholder="U+0041 or A" disabled /></div>
                     </div>
 
                     <div class="insp-section" data-mode="font">
@@ -130,6 +163,7 @@
                             <button id="btn-reverse" disabled>Reverse</button>
                             <button id="btn-closecontour" disabled>Open / Close</button>
                             <button id="btn-delete-points" disabled>Delete points</button>
+                            <button id="btn-direction" disabled data-mode="font" title="Make outer contours clockwise and holes counter-clockwise so counters are cut out">Fix direction</button>
                         </div>
                     </div>
 
