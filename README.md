@@ -16,6 +16,13 @@ Open `index.html` in a browser; there is no build step. Run the tests by opening
 - **Pen (P)**, **Edit (E)**, shapes, mirroring and a tracing image (**I**) are available in both modes.
 - On the canvas, every stroke keeps its own colours and width. Changing a colour while strokes are selected repaints them.
 
+### Path operations
+
+- **Union, Subtract, Intersect, Exclude** act on the contours that have a selected point. The last-drawn contour is the one that cuts.
+- **Remove overlap** merges overlapping and self-intersecting contours (for example, brush strokes) into clean outlines. With nothing selected it acts on the whole glyph.
+- Results come out with TrueType direction: outer contours clockwise, holes counter-clockwise. Curves that weren't cut keep their original points.
+- In font mode, **Remove overlaps** under Font is on by default. It cleans every glyph in the exported TTF without changing your project.
+
 ### Font tools
 
 - Add single glyphs or whole character sets (A–Z, a–z, 0–9, punctuation, ASCII).

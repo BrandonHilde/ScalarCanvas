@@ -796,6 +796,43 @@ class Editor {
         return this.paste({ x: d, y: -d });
     }
 
+    // Boolean path operation on the closed contours touched by the selection.
+    //   "removeOverlap": merge them all (also untangles self-intersections).
+    //   "union" | "subtract" | "intersect" | "exclude": the topmost (last
+    //   drawn) selected contour acts on the others, as in illustration tools.
+    // Returns a short status message, or null when nothing could be done.
+    pathOperation(op) {
+        const glyph = this.glyph;
+        if (!glyph || glyph.isComposite) return null;
+        const indices = this.selectedContourIndices().filter((ci) => glyph.contours[ci].closed);
+        const needed = op === "removeOverlap" ? 1 : 2;
+        if (indices.length < needed) {
+            return op === "removeOverlap"
+                ? "No closed contours to merge"
+                : "Select at least two closed contours";
+        }
+
+        const operands = indices.map((ci) => glyph.contours[ci]);
+        const { contours, changed } = op === "removeOverlap"
+            ? removeOverlap(operands)
+            : booleanContours(operands.slice(0, -1), operands.slice(-1), op);
+        if (!changed) return "Nothing to change";
+
+        const style = operands[0].style;
+        if (style) for (const c of contours) c.style = { ...style };
+
+        const before = glyph.clone();
+        for (const ci of indices.slice().reverse()) glyph.contours.splice(ci, 1);
+        glyph.contours.splice(indices[0], 0, ...contours);
+
+        this.selection = new Set();
+        for (let ci = indices[0]; ci < indices[0] + contours.length; ci++) {
+            glyph.contours[ci].points.forEach((_, pi) => this.selection.add(`${ci}:${pi}`));
+        }
+        this.commit(before, op);
+        return `${operands.length} → ${contours.length} contour${contours.length === 1 ? "" : "s"}`;
+    }
+
     // Normalise winding to the TrueType convention (outer clockwise, holes
     // counter-clockwise) so counters in letters like "o" are cut out.
     correctDirection() {

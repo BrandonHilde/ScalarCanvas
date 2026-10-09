@@ -53,7 +53,7 @@
                 <div class="separator"></div>
 
                 <button id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
-                <button id="redoBtn" disabled title="Redo (Ctrl+Shift+Z)">Redo</button>
+                <button id="redoBtn" disabled title="Redo">Redo</button>
 
                 <div class="spacer"></div>
 
@@ -133,6 +133,7 @@
                         <h4>Font</h4>
                         <div class="form-row"><label>Family</label><input id="insp-family" type="text" disabled /></div>
                         <div class="form-row"><label>Style</label><input id="insp-style" type="text" disabled /></div>
+                        <div class="form-row" title="Merge overlapping contours in every glyph of the exported TTF (your project is not changed)"><label>Clean export</label><input id="exportRemoveOverlap" type="checkbox" checked /><span class="insp-inline">Remove overlaps</span></div>
                     </div>
 
                     <div class="insp-section" data-mode="font">
@@ -165,6 +166,18 @@
                             <button id="btn-delete-points" disabled>Delete points</button>
                             <button id="btn-direction" disabled data-mode="font" title="Make outer contours clockwise and holes counter-clockwise so counters are cut out">Fix direction</button>
                         </div>
+                    </div>
+
+                    <div class="insp-section">
+                        <h4>Path operations</h4>
+                        <div class="insp-buttons path-ops">
+                            <button id="op-union" data-op="union" disabled title="Union: merge the selected contours">Union</button>
+                            <button id="op-subtract" data-op="subtract" disabled title="Subtract: the last-drawn selected contour cuts the others">Subtract</button>
+                            <button id="op-intersect" data-op="intersect" disabled title="Intersect: keep only where the last-drawn selected contour overlaps the others">Intersect</button>
+                            <button id="op-exclude" data-op="exclude" disabled title="Exclude: keep where they do not overlap">Exclude</button>
+                            <button id="op-removeOverlap" data-op="removeOverlap" disabled title="Remove overlap: merge overlapping and self-intersecting contours into clean outlines; acts on the whole glyph when nothing is selected">Remove overlap</button>
+                        </div>
+                        <div class="insp-note">Acts on contours with a selected point. The last-drawn one is the cutter.</div>
                     </div>
 
                     <div class="insp-section">
@@ -213,6 +226,7 @@
         <script src="src/core/Metrics.js"></script>
         <script src="src/core/FontDocument.js"></script>
         <script src="src/core/History.js"></script>
+        <script src="src/core/PathBoolean.js"></script>
         <script src="src/io/GlyphNames.js"></script>
         <script src="src/io/CubicToQuad.js"></script>
         <script src="src/io/TTFReader.js"></script>

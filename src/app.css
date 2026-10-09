@@ -779,3 +779,8 @@ header {
 header .separator {
     margin: 0 2px;
 }
+
+.insp-inline {
+    color: var(--muted);
+    font-size: 12px;
+}

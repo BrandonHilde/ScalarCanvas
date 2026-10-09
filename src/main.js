@@ -74,6 +74,8 @@ const els = {
     inspFamily: document.getElementById("insp-family"),
     inspStyle: document.getElementById("insp-style"),
     btnDirection: document.getElementById("btn-direction"),
+    pathOps: document.querySelectorAll(".path-ops button[data-op]"),
+    exportRemoveOverlap: document.getElementById("exportRemoveOverlap"),
 };
 
 const TOOL_HINTS = {
@@ -903,6 +905,7 @@ function updateInspector() {
     els.btnClose.disabled = !editable;
     els.btnDelete.disabled = !editable;
     els.btnDirection.disabled = !editable;
+    els.pathOps.forEach((btn) => { btn.disabled = !editable || glyph.isComposite; });
     els.inspName.disabled = !editable || mode !== "font";
     els.inspUnicode.disabled = !editable || mode !== "font";
 
@@ -1159,6 +1162,31 @@ function exportSVG() {
 
 els.saveSvgBtn.addEventListener("click", exportSVG);
 
+// A view of the font whose glyphs have overlaps merged, for export only; the
+// document itself is left as drawn. Glyphs that fail to process (or have
+// nothing to merge) are exported unchanged.
+function withOverlapsRemoved(doc) {
+    const out = Object.create(Object.getPrototypeOf(doc));
+    Object.assign(out, doc);
+    out.glyphs = doc.glyphs.map((glyph) => {
+        const closed = glyph.contours.filter((c) => c.closed);
+        if (glyph.isComposite || !closed.length) return glyph;
+        try {
+            const { contours, changed } = removeOverlap(closed);
+            // An empty result means only degenerate (zero-area) contours,
+            // e.g. placeholders in space glyphs; keep those as authored.
+            if (!changed || !contours.length) return glyph;
+            const copy = glyph.clone();
+            copy.contours = contours.concat(glyph.contours.filter((c) => !c.closed));
+            return copy;
+        } catch (err) {
+            console.warn(`Remove overlap failed for glyph "${glyph.name}"; exporting it unchanged.`, err);
+            return glyph;
+        }
+    });
+    return out;
+}
+
 els.exportBtn.addEventListener("click", async () => {
     if (!font) return;
     // TrueType has no open contours: every outline is closed and filled.
@@ -1175,7 +1203,15 @@ els.exportBtn.addEventListener("click", async () => {
         if (!ok) return;
     }
     try {
-        const buffer = new TTFWriter(font, { correctDirection: false }).write();
+        let source = font;
+        if (els.exportRemoveOverlap.checked) {
+            if (font.numGlyphs > 300) {
+                toast("Removing overlaps…");
+                await new Promise((resolve) => setTimeout(resolve, 30));
+            }
+            source = withOverlapsRemoved(font);
+        }
+        const buffer = new TTFWriter(source, { correctDirection: false }).write();
         downloadBlob(new Blob([buffer], { type: "font/ttf" }), (font.postScriptName || "export") + ".ttf");
         toast("Font exported");
     } catch (err) {
@@ -1328,6 +1364,12 @@ els.btnReverse.addEventListener("click", () => editor.reverseContours());
 els.btnClose.addEventListener("click", () => editor.toggleContourClosed());
 els.btnDelete.addEventListener("click", () => editor.deleteSelection());
 els.btnDirection.addEventListener("click", () => editor.correctDirection());
+els.pathOps.forEach((btn) => {
+    btn.addEventListener("click", () => {
+        const message = editor.pathOperation(btn.dataset.op);
+        if (message) toast(`${btn.textContent}: ${message}`);
+    });
+});
 
 els.freehandMode.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-value]");
